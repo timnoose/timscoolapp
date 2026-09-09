@@ -124,7 +124,7 @@ try {
   check((await quest('hvac')).status === 'active', 'HVAC quest started via Kyle');
   await g.shot('10-town');
   // walk out the church exit mat to the town for real
-  await g.teleport('church', 12, 17); await g.hold('ArrowDown', 250); await page.waitForTimeout(900);
+  await g.teleport('church', 22, 17); await g.hold('ArrowDown', 250); await page.waitForTimeout(900);
   check((await g.world()).map === 'town', 'church exit mat leads to town');
   await g.shot('11-town-front');
   // walk into the church door for real

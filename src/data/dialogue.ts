@@ -25,9 +25,26 @@ const L = (who: string, text: string, mood?: Mood): LineStep => ({ who, text, mo
 const N = (text: string): LineStep => ({ text });
 const ME = (text: string, mood: Mood = 'neutral'): LineStep => ({ who: 'erik', text, mood });
 
+const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+/** A symbol-only "curse" that never spells a word, e.g. "@#$%&!" */
+export function fakeCurse(): string { return pick(PERSONAL.fakeCurses); }
+export function curseCorrection(): string { return pick(PERSONAL.curseCorrections); }
+
 export function template(t: string, g: Game): string {
   const s = g.state;
   return t
+    .replace(/\{curse\}/g, () => fakeCurse())
+    .replace(/\{oops\}/g, () => curseCorrection())
+    .replace(/\{mission\}/g, PERSONAL.mission)
+    .replace(/\{address\}/g, PERSONAL.address)
+    .replace(/\{phone\}/g, PERSONAL.phone)
+    .replace(/\{serviceTime\}/g, PERSONAL.serviceTime)
+    .replace(/\{formerName\}/g, PERSONAL.formerName)
+    .replace(/\{sendingChurch\}/g, PERSONAL.sendingChurch)
+    .replace(/\{youth\}/g, PERSONAL.youthMinistry)
+    .replace(/\{youthNight\}/g, PERSONAL.youthNight)
+    .replace(/\{post\}/g, PERSONAL.armyPost)
+    .replace(/\{groups\}/g, PERSONAL.groupsName)
     .replace(/\{hero\}/g, PERSONAL.heroName)
     .replace(/\{heroTitle\}/g, PERSONAL.heroTitle)
     .replace(/\{nick\}/g, PERSONAL.heroNickname)
@@ -96,6 +113,9 @@ export const TALK: Record<string, (g: Game) => string> = {
   },
   member2: () => 'member2',
   member1: () => 'member1',
+  reyes: (g) => (g.has('reyesTalked') ? 'reyes_again' : 'reyes'),
+  welcomeTable: () => 'welcomeTable',
+  kidsBoard: () => 'kidsBoard',
   dale: (g) => {
     if (g.questIs('hvac', 'active') && g.questStage('hvac') === 0) return 'dale_meet';
     if (g.questIs('hvac', 'active') && g.questStage('hvac') === 1) return 'dale_options';
@@ -288,6 +308,7 @@ const EVENTS: RandomEvent[] = [
   { id: 'ev_ledWall', weight: 2, once: true, when: (g) => g.state.day > 5 },
   { id: 'ev_fanBreaker', weight: 6, once: true, when: (g) => g.has('hvacFans') && !g.has('hvacFixed') },
   { id: 'ev_pruittCake', weight: 3, once: true, when: (g) => g.isAlly('pruitt') },
+  { id: 'ev_blackhawks', weight: 2, when: (g) => g.state.day > 2 },
 ];
 
 export function pickRandomEvent(g: Game): string | null {
@@ -309,6 +330,7 @@ export const DIALOGUE: Dialogues = {
   intro: [
     N('{town}, {sage}\'s favorite church-planting town. A warehouse with a cross on it. Tuesday.'),
     N('Inside the warehouse: one pastor, one desk, one couch that has seen things.'),
+    N('Sent out by {sendingChurch} with a community group, a trailer, and a dream. Formerly {formerName}. The Comms team is still finding old logos.'),
     ME('Okay. New week. New mercies. New... smell? Is that the ceiling?', 'tired'),
     ME('Focus. Sunday is coming. It always is. It is the most reliable thing about Sunday.'),
     N('Your desk has a sticky note on it. Check the desk, then head out the door at the bottom of the room.'),
@@ -322,7 +344,7 @@ export const DIALOGUE: Dialogues = {
     ME('Kyle is at the sound booth. Kyle is always at the sound booth. I think he sleeps there.'),
   ],
   desk: [
-    N('Inbox: 214 unread. Subject lines include "quick question", "Quick Question", and "QUICK QUESTION???"'),
+    N('Inbox: 214 unread. Subject lines include "quick question", "Quick Question", "QUICK QUESTION???" and "re: the old Real Life banner (can we burn it)".'),
     { if: (g) => g.questIs('campaign', 'active'), then: 'desk_campaign' },
     { if: (g) => g.questIs('memorial', 'active'), then: 'desk_memorial' },
     ME('I\'ll answer those. Later. After the building. After the rapture, possibly.', 'tired'),
@@ -413,7 +435,8 @@ export const DIALOGUE: Dialogues = {
     { goto: 'preach_normal' },
   ],
   preach_normal: [
-    N('The band plays. Brayden\'s slides have one typo ("Jesus Lovs You"). Kyle catches the feedback before it howls. Mostly.'),
+    N('The band plays. Brayden\'s slides have one typo ("Jesus Lovs You"). Kyle catches the feedback before it howls. Mostly. The livestream has four viewers. One is Kyle checking the livestream.'),
+    N('The website says each service is "roughly an hour." Roughly. The word is doing a lot of work today.'),
     { effects: [{ custom: (g) => {
       const offering = BALANCE.sundayBaseOffering + Math.round(g.state.morale * BALANCE.sundayMoralePerDollar);
       g.set('lastOffering', offering);
@@ -432,7 +455,7 @@ export const DIALOGUE: Dialogues = {
     ME('Another Sunday. We\'re still here. That\'s not nothing.', 'happy'),
   ],
   tv: [
-    N('A 65-inch TV bolted to the wall. It displays a countdown timer and the words "How do I give?"'),
+    N('A 65-inch TV bolted to the wall. It displays a countdown timer and the words "How do I give?" (Church Center app, text-to-give, or the box that used to be a mailbox.)'),
     ME('"' + S.ledWall + '"', 'happy'),
     { if: (g) => g.isAlly('gary'), then: 'tv_gary' },
     ME('One day. One glorious, pixel-dense day.'),
@@ -444,7 +467,7 @@ export const DIALOGUE: Dialogues = {
     N('The thermostat reads 68. The room reads 84. One of them is lying.'),
   ],
   thermostat_fixed: [N('The thermostat reads 70. The room reads 70. Peace in our time.')],
-  thermostat_fans: [N('The thermostat reads 68. The room reads "box fan". It is fine. It is fine.')],
+  thermostat_fans: [N('The thermostat reads 68. The room reads "box fan". It is fine. It is fine.'), ME('{curse} {oops}', 'tired')],
   thermostat_fix: [
     { if: (g) => g.has('hvacFixed'), then: 'thermostat_fix_good' },
     { goto: 'thermostat_fix_fans' },
@@ -461,19 +484,22 @@ export const DIALOGUE: Dialogues = {
   ],
   chairs: [N('Padded stackable chairs. Gray. Each one has been sat in by someone who was nervous the first time and family by the tenth.')],
   coffee_refill: [
-    N('The coffee station. A commercial brewer Doug found on Facebook Marketplace. It has never been cleaned. It has never needed to be.'),
+    N('The coffee station. A commercial brewer Doug found on Facebook Marketplace, and a box of donuts. The website promises free coffee AND donuts. The website is binding.'),
     { choice: [
       { label: `Coffee Refill (+${BALANCE.coffeeRefillEnergy} energy)`, goto: 'coffee_drink' },
       { label: 'Not now', goto: 'coffee_skip' },
     ] },
   ],
   coffee_drink: [
-    N('You pour a cup the size of a fire extinguisher. Black. Terrifying. Perfect.'),
+    N('You pour a cup the size of a fire extinguisher. Black. Terrifying. Perfect. You take a donut with sprinkles, which nobody saw.'),
     { effects: [{ energy: BALANCE.coffeeRefillEnergy, set: 'coffeeToday', sfx: 'heal' }] },
     ME('Okay. Okay okay okay. Let\'s go.', 'happy'),
   ],
   coffee_skip: [ME('Later. Discipline is a fruit of the Spirit. Coffee is too, probably. Somewhere in the Greek.')],
-  coffee_empty: [N('The pot is empty. Someone took the last cup and did not start a new one. You know who. You forgive them. Slowly.')],
+  coffee_empty: [
+    N('The pot is empty and the donut box holds one plain donut and a lot of sprinkles. Someone took the last good one and did not start a new pot. You know who. You forgive them. Slowly.'),
+    ME('{curse} {oops}', 'angry'),
+  ],
   soundboard: [
     N('A 24-channel mixer. 19 channels are labeled with tape. One label just says "DO NOT."'),
     ME('Kyle\'s domain. I don\'t touch it. I barely look at it.'),
@@ -493,7 +519,7 @@ export const DIALOGUE: Dialogues = {
   ],
   stain_2: [
     N('The stain is the size of a card table. Two buckets now. Somebody drew a smiley face on the tile next to it.'),
-    ME('Okay, Ohio is now Ohio AND West Virginia. This is a regional situation.', 'tired'),
+    ME('{curse} Okay, Ohio is now Ohio AND West Virginia. This is a regional situation.', 'tired'),
   ],
   stain_3: [
     N('The stain has a name now. Doug calls it "Big Brown." Tasha calls it "the reason we are building." Both are correct.'),
@@ -524,11 +550,17 @@ export const DIALOGUE: Dialogues = {
   kyle_end: [L('kyle', 'A real building. With a real booth. With a DOOR. I might cry. I won\'t. But I might.', 'happy')],
   kyle_idle: [
     { if: (g) => g.has('preachedToday'), then: 'kyle_idle2' },
+    { if: (g) => g.state.day % 3 === 0, then: 'kyle_impact' },
     L('kyle', 'Sound check is at 9. It\'s always at 9. It has never once been at 9.'),
+  ],
+  kyle_impact: [
+    L('kyle', 'Wednesday. {youth} night, {youthNight}. Sixth through twelfth grade. Decibels I have never seen on a Sunday.', 'tired'),
+    L('kyle', 'Last week they asked for a fog machine. I said we don\'t have one. We have one. It\'s hidden.'),
   ],
   kyle_idle2: [L('kyle', 'That feedback squeal during the second song? That was the Holy Spirit. Or channel 7. Hard to say.')],
   brayden: [
     L('brayden', 'Pastor, is "Jesus Lovs You" a typo or, like, a vibe?'),
+    L('brayden', 'Also the {youth} group chat wants to know if Wednesday can have pizza. It\'s a 34-message thread. About pizza.'),
     ME('It\'s a typo, Brayden.'),
     L('brayden', 'Yeah but what if it\'s a vibe.'),
     { if: (g) => g.has('tashaAsked'), then: 'brayden_recruit' },
@@ -542,13 +574,13 @@ export const DIALOGUE: Dialogues = {
   ],
   brayden_after: [L('brayden', 'I did the nursery thing. A toddler called me "Bread." I answer to Bread now.', 'happy')],
   tasha_intro: [
-    L('tasha', 'Pastor. I have eleven toddlers Sunday and one helper. The helper is me.', 'tired'),
-    L('tasha', 'I need a body. Any body. A teenager. A deacon. A tall dog.'),
+    L('tasha', 'Pastor. Harvest Babees, Harvest Tots, Little Kids, Big Kids. Four classes. One helper. The helper is me.', 'tired'),
+    L('tasha', 'The Tots have organized. One of them has a clipboard. I need a body. Any body. A teenager. A deacon. A tall dog.'),
     ME('I\'ll find someone. Brayden owes me for the typos.'),
     { effects: [{ set: 'tashaAsked' }] },
   ],
   tasha_waiting: [L('tasha', 'Any luck? The toddlers are organizing. One of them has a clipboard.', 'shocked')],
-  tasha_after: [L('tasha', 'Brayden showed up! The toddlers call him Bread. He seems at peace with it.', 'happy')],
+  tasha_after: [L('tasha', 'Brayden showed up! The Harvest Tots call him Bread. He seems at peace with it. The Big Kids call him "sir." He does not.', 'happy')],
   doug_idle: [
     L('doug', 'Pastor. I built that coffee counter. With these hands. Two-by-fours and prayer.'),
     L('doug', '"' + S.bench300 + '" That\'s what you said, right? I got the elders on a program.', 'smug'),
@@ -574,7 +606,8 @@ export const DIALOGUE: Dialogues = {
   janet_end: [L('janet', 'For the record: nobody remembers what color we picked. I do. I\'ll never tell.', 'smug')],
   member1: [
     { if: (g) => g.questIs('elders', 'done'), then: 'member1_end' },
-    L('member1', 'Pastor! Love the sermon series. The one on patience. Any idea when it ends?'),
+    L('member1', 'Pastor! Our {groups} meets Tuesdays. We have never once finished the study. We have finished many casseroles.'),
+    L('member1', 'Also, love the sermon series. The one on patience. Any idea when it ends?'),
     ME('"' + S.bestChurch + '"', 'smug'),
     L('member1', 'That\'s not an answer but I agree with it.', 'happy'),
   ],
@@ -584,6 +617,7 @@ export const DIALOGUE: Dialogues = {
     L('member2', 'Is it true we might get a building with, like, walls that go all the way up?'),
     ME('Walls, ceilings, possibly a hallway.'),
     L('member2', 'A HALLWAY.', 'shocked'),
+    L('member2', 'When we were still a {groups} out of {sendingChurch} we met in a living room. We have come so far. We have a bucket now.'),
   ],
   member2_hot: [L('member2', 'It\'s hot. It\'s hot in a way that feels theological.', 'tired')],
 
@@ -798,12 +832,12 @@ export const DIALOGUE: Dialogues = {
     L('linda', 'Thursday coffee. I\'ll bring the parking plan. And brownies, if you\'re lucky.', 'happy'),
     { effects: [{ set: 'lindaResolved' }, { goodwill: 8 }] },
   ],
-  linda_resolved: [L('linda', 'The figurines have been relocated to an interior wall. We\'re fine. We\'re all fine.')],
+  linda_resolved: [L('linda', 'The figurines have been relocated to an interior wall. We\'re fine. We\'re all fine. The Blackhawks from post fly over at 9:45 and THAT noise I have never once complained about.')],
   linda_ally: [L('linda', 'I told the zoning board you were "one of the reasonable ones." That\'s the highest honor I give.', 'smug')],
   tonya_idle: [L('tonya', 'Apartment manager. Twenty-four units. Forty-one opinions.')],
   tonya_talk: [
     L('tonya', 'Pastor. Two things. One: your dumpster fence is down and my kids are using it as a fort.'),
-    L('tonya', 'Two: half my residents don\'t know you exist, and the other half think you\'re a gym.'),
+    L('tonya', 'Two: half my residents are stationed on {post} and PCS every eighteen months. The other half think you\'re a gym.'),
     ME('We get that a lot. It\'s the bench press.'),
     L('tonya', 'I\'m not mad. I\'m asking: are you going to be neighbors or just a parking lot?'),
     { choice: [
@@ -862,7 +896,7 @@ export const DIALOGUE: Dialogues = {
   ],
   service_tonya: [
     { effects: [{ energy: -25 }] },
-    N('Saturday. The BLOCK PARTY trailer rolls into the apartment lot behind Ronnie\'s truck. Hot dogs. A bounce house. Kyle DJs from a folding table.'),
+    N('Saturday. The BLOCK PARTY trailer rolls into the apartment lot behind Ronnie\'s truck. Hot dogs. A bounce house. Kyle DJs from a folding table. The website says you are "committed to blessing the community through serving food." That is the mission and also the menu.'),
     N('Forty kids. Twenty parents. Gary directs parking with his cones. Linda brings brownies. Mason wins the bench press contest (it is a broom).'),
     L('tonya', 'Half my building just met a church that didn\'t ask them for anything.', 'happy'),
     { effects: [{ set: 'serviceDone' }, { ally: 'ronnie' }, { ally: 'tonya' }, { ally: 'gary' }, { ally: 'linda' }, { goodwill: 16 }, { morale: 8 }, { quest: ['neighbor', 'done'], outcome: ['neighbor', 'Block party at the apartments. Forty kids. Gary directed parking. Linda brought brownies.'] }] },
@@ -1165,6 +1199,7 @@ export const DIALOGUE: Dialogues = {
     L('tim', 'Brother! Sit. I got you a black coffee the size of a fire extinguisher.'),
     ME('You know me too well, {sageShort}.'),
     L('tim', 'Bald guys stick together. Here\'s the thing: every church planter thinks the building is the goal. It\'s not. The building is the RECEIPT.'),
+    L('tim', 'Your own sign says it: "{mission}" Notice "build a warehouse" isn\'t on there. {sendingChurch} didn\'t send you out for square footage.'),
     L('tim', 'Go love people. Listen more than you talk. When you\'re stuck in a hard conversation, LISTEN first, then do what the listening tells you.'),
     L('tim', 'And if you get really stuck, text me. In encounters, "Ask Wise Sage" is literally me. I answer fast. I don\'t sleep. Bald guys don\'t need to.', 'smug'),
     { effects: [{ set: 'metTim' }] },
@@ -1224,7 +1259,7 @@ export const DIALOGUE: Dialogues = {
     ME('Sunday. 10:30. Bring your uncle.'),
     { effects: [{ set: 'masonTalked' }, { goodwill: 1 }] },
   ],
-  mason_again: [L('mason', 'I told everybody at school the pastor benches 300. Now they all want to come. Sorry?', 'happy')],
+  mason_again: [L('mason', 'I\'m a Harvest Big Kid. Fifth grade. Top of the food chain. I told everybody at school the pastor benches 300. Now they all want to come. Sorry?', 'happy')],
   dennis: [
     L('dennis', 'Pastor. Quick question. Is the building project in Revelation?'),
     ME('...Not specifically, Dennis.'),
@@ -1233,13 +1268,26 @@ export const DIALOGUE: Dialogues = {
     L('dennis', 'That\'s what THEY want you to think.', 'smug'),
     { effects: [{ set: 'dennisTalked' }] },
   ],
-  dennis_again: [L('dennis', 'I\'ve been watching the stain. It\'s shaped like Ohio. Ohio is significant. I\'ll explain Sunday.')],
+  dennis_again: [
+    L('dennis', 'Quick question. Are we Southern Baptist?'),
+    ME('We cooperate, Dennis.'),
+    L('dennis', 'With WHO?', 'shocked'),
+    ME('Everyone. That\'s the whole idea.'),
+    L('dennis', 'Also I\'ve been watching the stain. It\'s shaped like Ohio. Ohio is significant. I\'ll explain Sunday.'),
+  ],
   churchSign: [
-    N('"{church}. Sundays 10:30. We have coffee." In smaller letters: "and AC (pending)."'),
+    N('"{church}. {serviceTime}. Free coffee AND donuts." In smaller letters: "and AC (pending)."'),
+    N('Under that, the whole mission in one breath: "{mission}"'),
     ME('"' + S.bestChurch + '"', 'smug'),
   ],
   churchStreetSign: [
-    N('A sign by the road: "{church} - Everyone Welcome - Yes, This Building - No, Really."'),
+    N('A sign by the road: "{church} - {address} - Everyone Welcome - Yes, This Building - No, Really."'),
+    N('"{phone}. Please do not call during the sermon. Kyle will know."'),
+    { if: (g) => g.state.day > 3, then: 'churchStreetSign_old' },
+  ],
+  churchStreetSign_old: [
+    N('Someone has taped the old "{formerName}" banner to the back of the sign. It has been there since the rebrand. Nobody will admit to it.'),
+    ME('We rebranded. Twice, if you count the font. The Comms team has FEELINGS about the font.', 'tired'),
   ],
   trailer: [
     N('A white trailer with BLOCK PARTY! painted on the side. It contains a bounce house, a grill, and a folding table that has hosted 900 hot dogs.'),
@@ -1291,13 +1339,36 @@ export const DIALOGUE: Dialogues = {
   ],
   grantDeskSign: [N('"COMMUNITY DEVELOPMENT GRANTS. Ask for Paulette. Do NOT ask about Form B."')],
 
+  reyes: [
+    L('reyes', 'Pastor. Specialist Reyes. Stationed on {post}. Found y\'all at a block party. Free hot dogs, no strings. Suspicious.'),
+    ME('The strings are Jesus.'),
+    L('reyes', 'Yeah, I figured that out around the second hot dog. My sergeant said "go to church." He meant it as a threat. Joke\'s on him.', 'happy'),
+    L('reyes', 'PCS orders come in eighteen months. Till then, I\'m on the tech team. Kyle gave me a cable to hold. I hold it well.'),
+    { effects: [{ set: 'reyesTalked' }, { goodwill: 2 }, { morale: 2 }] },
+  ],
+  reyes_again: [L('reyes', 'Blackhawks at 9:45 every Sunday. That\'s not noise, Pastor. That\'s the opening hymn.', 'smug')],
+  welcomeTable: [
+    N('The welcome table. Connect cards, a bowl of mints from the {formerName} era, and a sign-up sheet for the next block party with 41 names on it.'),
+    N('A laminated card reads: "{mission}" Somebody has added, in pen, "and fix the AC."'),
+  ],
+  kidsBoard: [
+    N('HARVEST KIDS CHECK-IN. Four doors, four signs: Harvest Babees (0-17 months), Harvest Tots, Harvest Little Kids, Harvest Big Kids.'),
+    N('Under "Big Kids" someone has written "aka the Mason problem." Under that, in different handwriting: "I can read this."'),
+  ],
+  ev_blackhawks: [
+    N('Sunday, 10:52 AM. Two Blackhawks from {post} come over low, right at the closing point.'),
+    N('Nobody hears the closing point. Everybody loves it. Specialist Reyes salutes the ceiling. Dennis takes it as a sign.'),
+    ME('I\'ll say the closing point again next week. It was good. Trust me.', 'happy'),
+    { effects: [{ morale: 3 }] },
+  ],
+
   // ---------------------------------------------------------------- Random events
   ev_roofLeak: [
     N('Morning. It rained. The stain has a friend now. Water on the sound booth.'),
     { if: (g) => g.isAlly('dale'), then: 'ev_roofLeak_dale' },
     { effects: [{ fund: -450 }, { morale: -2 }] },
     N('A roofer patches it. $450. He says "for now" in a way that lingers.'),
-    ME('For now. Everything in this building is "for now."', 'tired'),
+    ME('{curse} {oops} For now. Everything in this building is "for now."', 'tired'),
   ],
   ev_roofLeak_dale: [
     N('Dale shows up with a tarp, a ladder, and a story about a bass the size of a toddler. He patches it for free. He tells the story twice.'),
@@ -1325,6 +1396,7 @@ export const DIALOGUE: Dialogues = {
     N('The BLOCK PARTY trailer is GONE. There is a clean rectangle of asphalt where it used to be.'),
     { if: (g) => g.isAlly('tonya'), then: 'ev_trailer_tonya' },
     { effects: [{ set: 'trailerMissing' }, { fund: -200 }] },
+    ME('{curse} Not the TRAILER. {oops}', 'shocked'),
     N('Two days later the police find it behind the apartments. Somebody "borrowed" it for a birthday. The tow fee is $200. The bounce house is fine.'),
     { effects: [{ custom: (g) => g.set('trailerMissing', false) }] },
   ],
@@ -1336,7 +1408,7 @@ export const DIALOGUE: Dialogues = {
   ev_repairBill: [
     N('The water heater has died. In its sleep. Peacefully. Expensively.'),
     { effects: [{ fund: -700 }] },
-    ME('$700. Cold hands for a week. Marcus is going to make a tab.', 'tired'),
+    ME('{curse} {oops} $700. Cold hands for a week. Marcus is going to make a tab.', 'tired'),
   ],
   ev_gift: [
     N('An envelope under the office door. No name. Inside: $1,500 in cash and a {team} sticker.'),
@@ -1361,6 +1433,8 @@ export const DIALOGUE: Dialogues = {
   ],
   ev_fanBreaker: [
     N('Sunday, 10:38 AM. Twelve box fans. One breaker. The breaker loses.'),
+    ME('{curse}', 'shocked'),
+    N('(He said it into a live microphone. The livestream caught it. Four viewers. One was his mother.)'),
     N('Total darkness. Somebody says "well." Somebody else starts singing, and the whole room joins in, in the dark, with no fans.'),
     N('Afterward, Dale comes by unprompted and fixes the compressor. He charges $900. He says "I told you" only once.'),
     { effects: [{ fund: -900 }, { set: 'hvacFixed' }, { morale: 4 }] },
@@ -1401,7 +1475,8 @@ export function ENDING_SCRIPT(kind: 'buy' | 'build', g: Game): EndingLine[] {
   if (g.isAlly('whitlock')) lines.push({ who: 'whitlock', mood: 'happy', text: 'The Dorothy Whitlock Music Room. Kids on Wednesdays. Mama would\'ve hated the noise. She\'d have loved it.' });
   if (g.flag('donorChoice') === 'restroom') lines.push({ who: 'whitlock', mood: 'smug', text: 'The Whitlock Family Restroom. Brass plaque. Little crown. Worth every penny. Ask anyone. Don\'t.' });
   if (g.isAlly('dale')) lines.push({ who: 'dale', mood: 'happy', text: 'AC works. I checked. I check every Tuesday. Bass are biting, by the way.' });
-  lines.push({ who: 'tasha', mood: 'happy', text: 'A nursery with a DOOR. Bread is head volunteer now.' });
+  lines.push({ who: 'tasha', mood: 'happy', text: 'Four kids rooms with DOORS. Babees, Tots, Little Kids, Big Kids. Bread is head volunteer now.' });
+  if (g.has('reyesTalked')) lines.push({ who: 'reyes', mood: 'happy', text: 'Orders got extended. I told the Army it was the coffee. It was not the coffee.' });
   lines.push({ who: 'brayden', mood: 'happy', text: 'Slides are typo-free. Mostly. "Jesus Lovs You" is on a t-shirt now. It\'s a vibe.' });
   lines.push({ who: 'erik', mood: 'neutral', text: 'The building is the receipt. Everyone in this room is the reason. ' + PERSONAL.churchName + '. ' + PERSONAL.townName + '.' });
   lines.push({ who: 'erik', mood: 'happy', text: `"${S.bestChurch}"` });
@@ -1438,7 +1513,10 @@ export function ENDING_CREDITS(kind: 'buy' | 'build', g: Game): { text: string; 
   out.push({ text: '' });
   out.push({ text: 'STARRING', color: '#ffd27f' });
   out.push({ text: `${PERSONAL.heroNickname} as himself`, small: true });
-  out.push({ text: `${PERSONAL.churchName} as itself`, small: true });
+  out.push({ text: `${PERSONAL.churchFullName} as itself`, small: true });
+  out.push({ text: `${PERSONAL.address} - ${PERSONAL.serviceTime}`, small: true });
+  out.push({ text: `Sent out by ${PERSONAL.sendingChurch}`, small: true });
+  out.push({ text: PERSONAL.mission, small: true });
   out.push({ text: 'The Warehouse as "The Warehouse"', small: true });
   out.push({ text: '' });
   out.push({ text: `Made with love (and a roast) for ${PERSONAL.heroName}`, color: '#ff7a7a' });

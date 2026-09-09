@@ -61,6 +61,7 @@ export class EndingScene extends Phaser.Scene {
     if (g.isAlly('whitlock')) cast.push('whitlock');
     if (g.isAlly('dale')) cast.push('dale');
     if (g.isAlly('tonya')) cast.push('tonya');
+    if (g.has('reyesTalked')) cast.push('reyes');
     cast.push(this.kind === 'buy' ? 'brenda' : 'hank');
     cast.forEach((id, i) => {
       const col = i % 2 === 0 ? cx - 1 : cx + 1;

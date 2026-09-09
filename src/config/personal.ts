@@ -44,6 +44,31 @@ export const PERSONAL = {
   wrestlingEventName: 'HARVEST SLAM',
   trailerText: 'BLOCK PARTY!',
 
+  // Real-church Easter eggs (from the church website)
+  churchFullName: 'Harvest Church Ft. Campbell',
+  formerName: 'Real Life Ft. Campbell',
+  sendingChurch: 'Real Life Sango',
+  mission: 'Love Jesus. Love People. Make Disciples. Plant Churches.',
+  address: '199 Jack Miller Blvd',
+  phone: '(931) 431-5013',
+  serviceTime: 'Sundays 10:30 AM',
+  youthMinistry: 'Impact Student Ministry',
+  youthNight: 'Wednesdays at 6',
+  kidsClasses: ['Harvest Babees', 'Harvest Tots', 'Harvest Little Kids', 'Harvest Big Kids'],
+  groupsName: 'C-Groups',
+  armyPost: 'Fort Campbell',
+
+  // Erik's "fake cursing": symbol strings only, never a real word
+  fakeCurses: ['@#$%&!', '#@%$*!!', '$%&@#!', '%$#@&*!', '@$#!!', '&%$#@?!', '#$@%!!', '$#!@&%!'],
+  curseCorrections: [
+    '...I said "sugar." Sugar.',
+    '...that was "fiddlesticks." Ask anyone.',
+    '...in the original Greek that means "oh no."',
+    '...I meant "dagnabbit." I am a pastor.',
+    '...that\'s Hebrew for "hmm."',
+    '...bless it. BLESS it.',
+  ],
+
   // Endings
   historicChurchName: 'Old Madison Street Chapel',
   newBuildName: 'Harvest Campus',

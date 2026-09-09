@@ -5,6 +5,7 @@ import { session, W, H } from '../engine/session';
 import { box, text, meter, wrap, COLORS } from '../engine/ui';
 import { portraitKey } from '../engine/textures';
 import { ENCOUNTERS } from '../data/encounters';
+import { fakeCurse, curseCorrection } from '../data/dialogue';
 import { BALANCE } from '../data/balance';
 import { PERSONAL } from '../config/personal';
 import { canUse, createEncounter, effectivenessOf, hintFor, moveCost, MOVE_INFO, playerMove, type EncounterState, type MoveId, type TurnResult } from '../engine/encounter';
@@ -198,7 +199,8 @@ export class EncounterScene extends Phaser.Scene {
     const res: TurnResult = playerMove(this.st, m);
     this.heroMood = this.st.energy < 30 ? 'tired' : m === 'boundary' ? 'smug' : 'neutral';
     this.heroPortrait.setTexture(portraitKey(this, 'erik', this.heroMood));
-    const playerLines = res.playerText;
+    const playerLines = res.playerText.slice();
+    if (res.effect === 'backfire') playerLines.push(`${PERSONAL.heroNickname}: "${fakeCurse()}" ${curseCorrection()}`);
     // sound for effect
     const sfxAfter = res.gain >= 30 ? 'super' : res.gain > 0 ? 'hit' : res.gain < 0 ? 'lose' : 'weak';
     this.say(playerLines, () => {
@@ -240,7 +242,7 @@ export class EncounterScene extends Phaser.Scene {
     } else {
       audio.sfx('fail');
       this.heroPortrait.setTexture(portraitKey(this, 'erik', 'tired'));
-      this.say([...d.loseText, `Congregation morale -${BALANCE.encounterLossMorale}. You need a nap and a snack.`], () => this.finishOut('lose'));
+      this.say([...d.loseText, `${PERSONAL.heroNickname}: "${fakeCurse()}" ${curseCorrection()}`, `Congregation morale -${BALANCE.encounterLossMorale}. You need a nap and a snack.`], () => this.finishOut('lose'));
     }
   }
 

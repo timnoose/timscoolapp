@@ -41,8 +41,8 @@ function buildTown(): MapDef {
   m.stamp(18, 25, ['gableL gableM gableLogo gableM gableR'], 'o');
   m.stamp(18, 26, ['column stone churchSign churchSign column']);
   m.stamp(18, 27, ['column stoneBase glassDoorL glassDoorR column']);
-  m.door(20, 27, 'church', 12, 17, 'up');
-  m.door(21, 27, 'church', 13, 17, 'up');
+  m.door(20, 27, 'church', 22, 17, 'up');
+  m.door(21, 27, 'church', 23, 17, 'up');
   m.interact(20, 26, 'churchSign', 'Sign');
   m.interact(21, 26, 'churchSign', 'Sign');
   // sidewalk in front + parking lot
@@ -202,6 +202,7 @@ function buildTown(): MapDef {
   m.npc({ id: 'brenda', x: 44, y: 10, dir: 'down', dialogue: 'brenda' });
   m.npc({ id: 'hank', x: 40, y: 36, dir: 'up', dialogue: 'hank' });
   m.npc({ id: 'member1', x: 23, y: 20, dir: 'down', dialogue: 'member1', wander: true });
+  m.npc({ id: 'reyes', x: 29, y: 28, dir: 'down', dialogue: 'reyes' });
   return m.build();
 }
 
@@ -220,6 +221,8 @@ function buildChurch(): MapDef {
   m.interact(13, 1, 'tv', 'TV');
   m.g(22, 1, 'thermostat');
   m.interact(22, 1, 'thermostat', 'Thermostat');
+  m.g(8, 1, 'bulletin');
+  m.interact(8, 1, 'kidsBoard', 'Harvest Kids Board');
   // stage + pulpit
   m.rect(5, 2, 16, 1, 'stage');
   m.g(12, 2, 'pulpit');
@@ -245,11 +248,14 @@ function buildChurch(): MapDef {
   // the ominous ceiling stain
   m.o(21, 14, 'stainBucket');
   m.interact(21, 14, 'stain', 'Bucket');
-  m.o(22, 17, 'plant');
-  // exit mat
-  m.g(12, 18, 'doorMat').g(13, 18, 'doorMat');
-  m.door(12, 18, 'town', 20, 28, 'down');
-  m.door(13, 18, 'town', 21, 28, 'down');
+  m.o(19, 17, 'plant');
+  // exit mat: the real doors are at the back right of the room
+  m.g(22, 18, 'doorMat').g(23, 18, 'doorMat');
+  m.door(22, 18, 'town', 20, 28, 'down');
+  m.door(23, 18, 'town', 21, 28, 'down');
+  // welcome table by the doors
+  m.o(20, 18, 'laptopTable');
+  m.interact(20, 18, 'welcomeTable', 'Welcome Table');
   // NPCs
   m.npc({ id: 'kyle', x: 13, y: 16, dir: 'up', dialogue: 'kyle' });
   m.npc({ id: 'brayden', x: 11, y: 16, dir: 'up', dialogue: 'brayden' });

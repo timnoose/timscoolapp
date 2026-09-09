@@ -11,6 +11,7 @@ import type { UIScene } from './UIScene';
 import { AUTO_DIALOGUE, NPC_VISIBLE, MAP_OVERRIDES, pickRandomEvent } from '../data/dialogue';
 import { BALANCE } from '../data/balance';
 import { TILES } from '../art/tiles';
+import { fakeCurse } from '../data/dialogue';
 
 const COUNTER_TILES = new Set(['cafeCounter', 'espresso', 'pastryCase', 'cityCounter', 'counterL', 'counterCoffee', 'counterR', 'grantDesk', 'desk', 'soundDesk', 'laptopTable']);
 const DIR_FRAME: Record<Dir, number> = { down: 0, up: 3, left: 6, right: 9 };
@@ -38,6 +39,7 @@ export class WorldScene extends Phaser.Scene {
   private moving = false;
   private npcs: NpcSprite[] = [];
   private bumpAt = 0;
+  private bumps = 0;
   private transitioning = false;
   private ready = false;
   private lastPlaytime = 0;
@@ -216,7 +218,12 @@ export class WorldScene extends Phaser.Scene {
     if (this.blocked(nx, ny)) {
       this.player.anims.stop();
       this.player.setFrame(DIR_FRAME[this.dir]);
-      if (time - this.bumpAt > 400) { audio.sfx('bump'); this.bumpAt = time; }
+      if (time - this.bumpAt > 400) {
+        audio.sfx('bump');
+        this.bumpAt = time;
+        this.bumps++;
+        if (this.bumps % 7 === 0) this.mutter(fakeCurse());
+      }
       return;
     }
     this.moving = true;
@@ -260,6 +267,13 @@ export class WorldScene extends Phaser.Scene {
         this.onMapEntered();
       });
     });
+  }
+
+  /** Small floating text over the player (used for muttered fake curses). */
+  private mutter(txt: string): void {
+    const t = this.add.text(this.player.x, this.player.y - 28, txt, { fontFamily: 'PressStart', fontSize: '8px', color: '#ff7a7a', resolution: 1 }).setOrigin(0.5, 1).setDepth(500);
+    t.setShadow(1, 1, '#000', 0, false, true);
+    this.tweens.add({ targets: t, y: t.y - 10, alpha: 0, duration: 900, ease: 'Sine.out', onComplete: () => t.destroy() });
   }
 
   // ---------------- Interaction ----------------

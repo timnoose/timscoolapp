@@ -143,6 +143,11 @@ export const CAST: Record<string, CastMember> = {
     sprite: { skin: SKIN.light, hair: '#8a5a3a', shirt: '#d05050', pants: '#3a3a4a', hairStyle: 'long' },
     portrait: { skin: SKIN.light, hair: '#8a5a3a', shirt: '#d05050', hairStyle: 'long' },
   },
+  reyes: {
+    id: 'reyes', name: 'Specialist Reyes',
+    sprite: { skin: SKIN.brown, hair: '#1a1210', shirt: '#5a6a3a', pants: '#4a5a3a', hairStyle: 'cap', capColor: '#4a5a3a' },
+    portrait: { skin: SKIN.brown, hair: '#1a1210', shirt: '#5a6a3a', hairStyle: 'cap', capColor: '#4a5a3a' },
+  },
   member2: {
     id: 'member2', name: 'Church Member',
     sprite: { skin: SKIN.brown, hair: '#1a1210', shirt: '#5080d0', pants: '#3a3a4a', hairStyle: 'short' },
