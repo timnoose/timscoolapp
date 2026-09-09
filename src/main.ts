@@ -44,12 +44,13 @@ function layout(): void {
   const app = document.getElementById('app');
   if (!app) return;
   const portrait = window.innerHeight > window.innerWidth;
-  if (document.body.classList.contains('touch') && portrait) {
-    app.style.justifyContent = 'flex-start';
-    app.style.paddingTop = '8px';
-  } else {
-    app.style.justifyContent = 'center';
-    app.style.paddingTop = '0';
+  const portraitTouch = document.body.classList.contains('touch') && portrait;
+  app.style.justifyContent = portraitTouch ? 'flex-start' : 'center';
+  app.style.paddingTop = portraitTouch ? '8px' : '0';
+  // Phaser centers the canvas inside its parent; in portrait-with-controls keep it at the top instead
+  if (game.scale) {
+    game.scale.autoCenter = portraitTouch ? Phaser.Scale.CENTER_HORIZONTALLY : Phaser.Scale.CENTER_BOTH;
+    game.scale.refresh();
   }
 }
 window.addEventListener('resize', layout);
