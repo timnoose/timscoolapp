@@ -394,7 +394,7 @@ export class UIScene extends Phaser.Scene {
     const s = gm.state;
     const lines: { t: string; color?: string; scale?: number }[] = [];
     if (this.menuTab === 0) {
-      lines.push({ t: 'NOW: ' + currentObjective(gm), color: COLORS.accent, scale: 0.75 });
+      wrap('NOW: ' + currentObjective(gm), 62).forEach((l) => lines.push({ t: l, color: COLORS.accent, scale: 0.75 }));
       lines.push({ t: '' });
       const order = Object.values(QUESTS).sort((a, b) => a.order - b.order);
       for (const q of order) {
@@ -440,7 +440,7 @@ export class UIScene extends Phaser.Scene {
       }
     }
     // render lines with scroll
-    const visibleH = H - 46;
+    const visibleH = H - 56;
     let y = 32;
     const heights = lines.map((l) => (l.scale ? 9 : 12));
     const total = heights.reduce((a, b) => a + b, 0);
@@ -448,7 +448,7 @@ export class UIScene extends Phaser.Scene {
     this.menuScroll = Math.max(0, Math.min(this.menuScroll, maxScroll));
     y -= this.menuScroll;
     lines.forEach((l, i) => {
-      if (y >= 28 && y < H - 12) {
+      if (y >= 28 && y < H - 22) {
         if (l.t.startsWith(METER_MARK)) {
           const [f, col] = l.t.slice(METER_MARK.length).split('|');
           meter(g, 14, y + 2, 200, 5, parseFloat(f), parseInt(col, 10));

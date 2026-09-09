@@ -25,6 +25,7 @@ export class EndingScene extends Phaser.Scene {
   private phase: 'walk' | 'talk' | 'credits' | 'done' = 'walk';
   private player!: Phaser.GameObjects.Sprite;
   private creditsContainer?: Phaser.GameObjects.Container;
+  private creditsTween?: Phaser.Tweens.Tween;
   private uiContainer!: Phaser.GameObjects.Container;
   private mapW = 0;
   private mapH = 0;
@@ -140,7 +141,7 @@ export class EndingScene extends Phaser.Scene {
     }
     const total = y + 40;
     this.creditsContainer = c;
-    this.tweens.add({ targets: c, y: -total + H - 60, duration: Math.max(12000, lines.length * 900), ease: 'Linear', onComplete: () => {
+    this.creditsTween = this.tweens.add({ targets: c, y: -total + H - 60, duration: Math.max(12000, lines.length * 900), ease: 'Linear', onComplete: () => {
       this.phase = 'done';
       const end = text(this, W / 2, H - 30, 'THE END  -  press A to return to title', { color: COLORS.accent, align: 'center' }).setOrigin(0.5).setScrollFactor(0).setDepth(500);
       this.tweens.add({ targets: end, alpha: 0.4, yoyo: true, repeat: -1, duration: 600 });
@@ -157,7 +158,8 @@ export class EndingScene extends Phaser.Scene {
         if (input.consume('a')) { this.typed = this.current.length; this.msg.setText(this.current); }
       } else if (input.consume('a') || input.consume('b')) { audio.sfx('confirm'); this.showLine(); }
     } else if (this.phase === 'credits') {
-      if (input.isDown('a') && this.creditsContainer) this.creditsContainer.y -= delta * 0.12;
+      // holding A fast-forwards the credits
+      if (this.creditsTween) this.creditsTween.timeScale = input.isDown('a') ? 8 : 1;
     } else if (this.phase === 'done') {
       if (input.consume('a') || input.consume('b')) {
         audio.sfx('confirm');

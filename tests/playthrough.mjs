@@ -56,7 +56,14 @@ try {
           if (!shotDone.has(key)) { shotDone.add(key); await page.waitForTimeout(150); await g.shot(`enc-${key}`); }
           const idx = opts.moveIndex !== undefined ? opts.moveIndex : await page.evaluate(() => window.__heman.game.scene.getScene('Encounter').debugBestMove());
           await page.evaluate((i) => window.__heman.game.scene.getScene('Encounter').debugChoose(i), idx);
-          await page.waitForTimeout(120);
+          await page.waitForTimeout(150);
+          // forced move unusable (out of energy)? fall back to the best available move
+          const stillMenu = await page.evaluate(() => window.__heman.game.scene.getScene('Encounter').debugPhase === 'menu');
+          if (stillMenu && opts.moveIndex !== undefined) {
+            const best = await page.evaluate(() => window.__heman.game.scene.getScene('Encounter').debugBestMove());
+            await page.evaluate((i) => window.__heman.game.scene.getScene('Encounter').debugChoose(i), best);
+            await page.waitForTimeout(150);
+          }
         } else {
           await g.press('Space', 30);
           await page.waitForTimeout(30);
@@ -260,9 +267,9 @@ try {
   await page.waitForTimeout(500);
   await g.shot('21-credits');
   // fast-forward credits by holding A
-  await page.keyboard.down('Space'); await page.waitForTimeout(9000); await page.keyboard.up('Space');
+  await page.keyboard.down('Space'); await page.waitForTimeout(6000); await page.keyboard.up('Space');
   await page.waitForTimeout(500);
-  await g.press('Space'); await page.waitForTimeout(1200);
+  await g.press('Space'); await page.waitForTimeout(1500);
   check(await g.scene('Title'), 'back to title after buy ending');
 
   // ---------- Ending: BUILD (restore snapshot) ----------
@@ -277,8 +284,9 @@ try {
   await page.waitForTimeout(5500);
   await g.shot('22-ending-build');
   for (let i = 0; i < 40; i++) { await g.press('Space', 30); await page.waitForTimeout(60); }
-  await page.keyboard.down('Space'); await page.waitForTimeout(9000); await page.keyboard.up('Space');
-  await g.press('Space'); await page.waitForTimeout(1200);
+  await page.keyboard.down('Space'); await page.waitForTimeout(6000); await page.keyboard.up('Space');
+  await page.waitForTimeout(500);
+  await g.press('Space'); await page.waitForTimeout(1500);
   check(await g.scene('Title'), 'back to title after build ending');
 
   // ---------- Lose an encounter and retry ----------
@@ -289,7 +297,7 @@ try {
   await g.startNewGame(); await runUntilFree();
   await talk('church', 13, 17, 'ArrowUp');
   await page.evaluate(() => { window.__heman.session.game.state.energy = 25; });
-  r = await talk('coffee', 8, 4, 'ArrowUp', { moveIndex: 1 }); // spam Explain Vision (weak) until energy runs out
+  r = await talk('coffee', 8, 4, 'ArrowUp', { moveIndex: 1, noRest: true }); // spam Explain Vision (weak) until energy runs out
   check(r.includes('lose'), 'lost Dale on purpose: ' + r);
   const afterLose = await g.state();
   check(afterLose.energy >= 15, 'energy floor after losing: ' + afterLose.energy);

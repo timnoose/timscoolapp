@@ -235,5 +235,5 @@ export function hintFor(st: EncounterState): string | null {
     .filter((x) => x.e === 'super' || x.e === 'good')
     .sort((a, b) => (a.e === 'super' ? -1 : 1) - (b.e === 'super' ? -1 : 1));
   if (!best.length) return null;
-  return `Try: ${best.map((b) => MOVE_INFO[b.m].short).join(' / ')}`;
+  return `Try: ${best.slice(0, 2).map((b) => MOVE_INFO[b.m].short).join(' / ')}`;
 }

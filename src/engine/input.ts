@@ -53,8 +53,11 @@ class InputManager {
   }
 
   enableTouch(): void {
+    if (this.isTouch) return;
     this.isTouch = true;
     document.body.classList.add('touch');
+    // let the page re-run its layout (portrait phones put the canvas at the top, controls below)
+    window.dispatchEvent(new Event('resize'));
   }
 
   private press(k: Key): void {
