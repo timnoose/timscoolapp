@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { TILES, TILE_NAMES } from '../art/tiles';
 import { TILE_PALETTE } from '../art/palette';
 import { drawRows, type Rows } from '../art/pixel';
-import { buildCharacter, CHAR_W, CHAR_H } from '../art/characters';
+import { buildCharacter, buildFlexFrames, CHAR_W, CHAR_H } from '../art/characters';
 import { buildPortrait, type Mood } from '../art/portraits';
 import { CAST } from '../data/cast';
 
@@ -48,6 +48,18 @@ export function generateCharacters(scene: Phaser.Scene): void {
       scene.anims.create({ key: `${key}-walk-${d}`, frames: [{ key, frame: base + 1 }, { key, frame: base }, { key, frame: base + 2 }, { key, frame: base }], frameRate: 8, repeat: -1 });
     });
   }
+}
+
+/** Title-screen flex pose for the hero. */
+export function generateHeroFlex(scene: Phaser.Scene): void {
+  const key = 'char-erik-flex';
+  if (scene.textures.exists(key)) return;
+  const { frames, palette } = buildFlexFrames(CAST.erik.sprite);
+  const tex = scene.textures.createCanvas(key, frames.length * CHAR_W, CHAR_H)!;
+  const ctx = tex.getContext();
+  frames.forEach((f, i) => { drawRows(ctx, f, palette, i * CHAR_W, 0); tex.add(i, 0, i * CHAR_W, 0, CHAR_W, CHAR_H); });
+  tex.refresh();
+  scene.anims.create({ key: 'erik-flex', frames: [{ key, frame: 0 }, { key, frame: 1 }], frameRate: 3, repeat: -1 });
 }
 
 const portraitCache = new Set<string>();
@@ -138,7 +150,25 @@ export function generateUI(scene: Phaser.Scene): void {
     'icon-energy': { rows: ['....bb..', '...bb...', '..bb....', '.bbbbbb.', '...bbb..', '....bb..', '...bb...', '..bb....'], pal: { b: '#66aaff' } },
     'cursor': { rows: ['w.......', 'ww......', 'www.....', 'wwww....', 'www.....', 'ww......', 'w.......', '........'], pal: { w: '#ffffff' } },
     'icon-day': { rows: ['..wwww..', '.wwwwww.', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', '.wwwwww.', '..wwww..'], pal: { w: '#ffd27f' } },
+    'bolt': { rows: ['....yyyy', '...yyyy.', '..yyyy..', '.yyyyyyy', '....yyy.', '...yyy..', '..yyy...', '.yy.....'], pal: { y: '#ffd27f' } },
   };
+  // helicopter silhouette for the title screen (32x10)
+  if (!scene.textures.exists('heli')) {
+    const heli = scene.textures.createCanvas('heli', 32, 10)!;
+    drawRows(heli.getContext(), [
+      '....xxxxxxxxxxxxxxxxxxxxxxxx....',
+      '..............xx................',
+      '.....xxxxxxxxxxxxxxxxxxx........',
+      'xxxxxxxxxxxxxxxxxxxxxxxxxx......',
+      'xx..xxxxxxxxxxxxxxxxxxxxxxxx....',
+      '.x...xxxxxxxxxxxxxxxxxxxxxx.....',
+      '.xx....xxxxxxxxxxxxxxxxx........',
+      '.........xx........xx...........',
+      '.......xxxxxxxxxxxxxxxxx........',
+      '................................',
+    ], { x: '#1a1a22' }, 0, 0);
+    heli.refresh();
+  }
   for (const [key, def] of Object.entries(icons)) {
     if (scene.textures.exists(key)) continue;
     const tex = scene.textures.createCanvas(key, 8, 8)!;

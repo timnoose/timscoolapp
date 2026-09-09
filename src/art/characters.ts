@@ -4,7 +4,7 @@
  * Palette keys: x outline, s skin, S skin shadow, h hair, c shirt, C shirt shade,
  * p pants, o shoes, e eye, b beard, k cap, v vest, a glasses, m mouth, t tattoo, w white.
  */
-import { flipH, overlay, remap, type Palette, type Rows } from './pixel';
+import { flipH, overlay, remap, shift, type Palette, type Rows } from './pixel';
 
 export type HairStyle = 'short' | 'bald' | 'cap' | 'long' | 'bun' | 'curly' | 'gray';
 
@@ -320,6 +320,50 @@ const TATTOO_DOWN: Rows = [
   ...Array(16).fill('................'),
   '.xcct...........', '.xcct...........', ...Array(6).fill('................'),
 ];
+
+// ---- Flex pose (title screen): fists up, chest out ----
+const FLEX_DOWN: Rows = [
+  '................',
+  '................',
+  '.....xxxxxx.....',
+  '....xhhhhhhx....',
+  '.xx.xhhhhhhx.xx.',
+  'xssxhhhhhhhhxssx',
+  'xssxhhsssshhxssx',
+  'xxcxssssssssxcxx',
+  '.xcxsessssesxcx.',
+  '.xcxssssssssxcx.',
+  '.xcxSssssssSxcx.',
+  '.xccxssmmssxccx.',
+  '.xcccxssssxcccx.',
+  '..xccxxxxxxccx..',
+  '..xccccccccccx..',
+  '.xccccccccccccx.',
+  '.xccCccccccCccx.',
+  '.xccCccccccCccx.',
+  '.xxxxccccccxxxx.',
+  '..xxxppppppxxx..',
+  '....xppppppx....',
+  '....xppxxppx....',
+  '....xooxxoox....',
+  '....xxx..xxx....',
+];
+const FLEX_VEST: Rows = [
+  ...Array(14).fill('................'),
+  '..xvvvccccvvvx..', '.xccvvvccvvvccx.',
+  '.xccCvvvvvvCccx.', '.xccCvvvvvvCccx.', '.xxxxvvvvvvxxxx.',
+  ...Array(5).fill('................'),
+];
+
+/** Two-frame flexing pose for the hero (used on the title screen). */
+export function buildFlexFrames(spec: CharacterSpec): CharacterFrames {
+  const base = buildFrame(FLEX_DOWN, 'down', { ...spec, vest: false });
+  const withVest = spec.vest ? overlay(base, FLEX_VEST) : base;
+  const a = withVest;
+  const b = shift(withVest, 0, -1).map((r, y) => (y === 23 ? withVest[23] : r));
+  const { palette } = buildCharacter(spec);
+  return { frames: [a, b], palette };
+}
 
 function buildFrame(base: Rows, dir: 'down' | 'up' | 'left', spec: CharacterSpec): Rows {
   let rows = base;

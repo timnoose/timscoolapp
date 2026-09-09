@@ -58,6 +58,17 @@ export const PERSONAL = {
   groupsName: 'C-Groups',
   armyPost: 'Fort Campbell',
 
+  // Public bio Easter eggs (set any to '' to remove it from the game)
+  bio: {
+    lastName: 'Maloy',
+    formerLife: 'US Navy submariner and MMA fighter',
+    podcast: true,
+    hometownRegion: 'Boston',
+    formerChurch: 'First Church in Charlestown',
+    formerJob: 'public school teacher',
+    family: 'Sarah, Casey and Kayla', // shown on the office desk photo; leave '' to skip
+  },
+
   // Erik's "fake cursing": symbol strings only, never a real word
   fakeCurses: ['@#$%&!', '#@%$*!!', '$%&@#!', '%$#@&*!', '@$#!!', '&%$#@?!', '#$@%!!', '$#!@&%!'],
   curseCorrections: [

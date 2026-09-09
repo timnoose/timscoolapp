@@ -17,6 +17,10 @@ const r = await build({
 const js = r.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 
 const html = `<title>He-Erik-Man Quest</title>
+<meta property="og:title" content="He-Erik-Man Quest: Building Edition">
+<meta property="og:description" content="A retro pixel RPG: keep the warehouse church running, win over Clarksville, and finally get Harvest Church Ft. Campbell a building.">
+<meta property="og:image" content="https://timnoose.github.io/timscoolapp/og.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=block">
 <style>
   html, body { margin: 0; padding: 0; height: 100%; background: #101018; color: #f4f4f0;

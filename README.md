@@ -69,6 +69,10 @@ The browser tests use the bundled Playwright + Chromium; see `tests/`.
 - **GitHub Pages:** the workflow in `.github/workflows/deploy-pages.yml` builds and publishes `dist/` on every push to `main`. One-time setup: repo *Settings → Pages → Source: GitHub Actions*. The game is then at `https://<user>.github.io/<repo>/`.
 - **Anywhere else:** run `npm run build` and upload `dist/`. Paths are relative, so it works from any subfolder.
 
+## Link previews
+
+`public/og.png` is the title screen captured as a 1200x630 image, and `index.html` carries Open Graph / Twitter meta tags pointing at `https://timnoose.github.io/timscoolapp/og.png`. If you host the game somewhere else, change that URL in `index.html` (two places) so text messages and social apps show the card. Regenerate the image after changing the title screen with `node tests/og.mjs` (needs a built `dist/`).
+
 ## Known limitations
 
 - Art is deliberately simple code-drawn pixel art (no image-generation tools were used).

@@ -45,6 +45,9 @@ export function template(t: string, g: Game): string {
     .replace(/\{youthNight\}/g, PERSONAL.youthNight)
     .replace(/\{post\}/g, PERSONAL.armyPost)
     .replace(/\{groups\}/g, PERSONAL.groupsName)
+    .replace(/\{family\}/g, PERSONAL.bio.family)
+    .replace(/\{formerChurch\}/g, PERSONAL.bio.formerChurch)
+    .replace(/\{hometown\}/g, PERSONAL.bio.hometownRegion)
     .replace(/\{hero\}/g, PERSONAL.heroName)
     .replace(/\{heroTitle\}/g, PERSONAL.heroTitle)
     .replace(/\{nick\}/g, PERSONAL.heroNickname)
@@ -344,10 +347,15 @@ export const DIALOGUE: Dialogues = {
     ME('Kyle is at the sound booth. Kyle is always at the sound booth. I think he sleeps there.'),
   ],
   desk: [
+    { if: () => !!PERSONAL.bio.family && Math.random() < 0.35, then: 'desk_photo' },
     N('Inbox: 214 unread. Subject lines include "quick question", "Quick Question", "QUICK QUESTION???" and "re: the old Real Life banner (can we burn it)".'),
     { if: (g) => g.questIs('campaign', 'active'), then: 'desk_campaign' },
     { if: (g) => g.questIs('memorial', 'active'), then: 'desk_memorial' },
     ME('I\'ll answer those. Later. After the building. After the rapture, possibly.', 'tired'),
+  ],
+  desk_photo: [
+    N('A framed photo on the desk: {family}. Behind it, a smaller frame: a submarine. Behind THAT, a smaller one: a cage. It is a whole timeline.'),
+    ME('The reason for all of this. Also the reason I know what a torpedo tube smells like.', 'happy'),
   ],
   desk_campaign: [
     N('A text from {sage}: "Capital campaign. Three legs: an event, a grant, a donor. Do all three. Love you. Bald guys stick together."'),
@@ -385,8 +393,8 @@ export const DIALOGUE: Dialogues = {
     { effects: [{ stage: ['memorial', 2] }] },
   ],
   bookshelf: [
-    N('Commentaries, a Greek lexicon, "Church Planting for Regular People" by {sage}, and a well-worn WWE almanac.'),
-    ME('All of these are theology if you read them right.'),
+    N('Commentaries, a Greek lexicon, "Church Planting for Regular People" by {sage}, a well-worn WWE almanac, a submarine qualification manual, and a podcast microphone still in the box.'),
+    ME('All of these are theology if you read them right. The microphone is for the podcast. There is always a podcast.'),
   ],
   benchPress: [
     N('A bench press. In a pastor\'s office. Of course.'),
@@ -401,7 +409,10 @@ export const DIALOGUE: Dialogues = {
     ME('"' + S.bench300 + '"', 'smug'),
     { effects: [{ energy: -10, morale: 2, sfx: 'thud' }] },
   ],
-  bench_admire: [ME('Someday, elders. Someday you will all be tested.', 'smug')],
+  bench_admire: [
+    ME('Someday, elders. Someday you will all be tested.', 'smug'),
+    N('Taped to the wall above the bench: an old MMA fight poster. Someone has written "PASTOR" over the fighter name in marker. The fighter is him.'),
+  ],
 
   // ---------------------------------------------------------------- church objects
   pulpit: [
@@ -586,6 +597,7 @@ export const DIALOGUE: Dialogues = {
     L('doug', '"' + S.bench300 + '" That\'s what you said, right? I got the elders on a program.', 'smug'),
     ME('I said it once. As a joke. Mostly.'),
     L('doug', 'Marcus is up to 95.'),
+    L('doug', 'You know what they say about you at the gym? "Navy guy. Cage guy. Pastor guy." In that order. Every time.', 'smug'),
   ],
   doug_wait: [L('doug', 'Marcus has the spreadsheet open. Go put it out of its misery.')],
   doug_end: [L('doug', 'Head of the build team. Got a hat that says it. Made the hat myself.', 'happy')],
@@ -948,7 +960,11 @@ export const DIALOGUE: Dialogues = {
     { goto: 'campaign_check' },
   ],
   paulette_done: [L('paulette', 'Framed your application. First one in eleven years with all 47 pages. Marcus signed page 31.', 'happy')],
-  whitlock_idle: [L('whitlock', 'Three car washes and a boat. That\'s the whole bio. Ask me about the boat.')],
+  whitlock_idle: [
+    L('whitlock', 'Three car washes and a boat. That\'s the whole bio. Ask me about the boat.'),
+    L('whitlock', 'Heard you pastored up north before this. {formerChurch}, right? Old building. Real steeple. And you traded it for a warehouse with a bucket.', 'smug'),
+    ME('I replanted a church in {hometown}, then came here to plant one from scratch. Apparently I only know how to do this the hard way.', 'tired'),
+  ],
   whitlock_pitch: [
     N('Mr. Whitlock owns three car washes and a boat named "Liquid Assets."'),
     L('whitlock', 'Pastor. I\'ve been thinking about legacy.'),
@@ -1000,6 +1016,7 @@ export const DIALOGUE: Dialogues = {
   slam_start: [
     N('Saturday night. The chairs are gone. A ring sits in the sanctuary under Christmas lights. There are 180 people (the fire marshal counted).'),
     N('A masked figure waits in the ring. He is enormous. He is wearing a "DEACON" cape. It is obviously Ronnie.'),
+    N('Somebody in the crowd yells "He used to fight in a CAGE!" Somebody else yells "He used to live in a SUBMARINE!" Both are true. Neither is relevant. Both help.'),
     ME('"' + S.violence + '"', 'smug'),
     { encounter: 'masked', win: 'slam_win', lose: 'slam_lose' },
   ],
@@ -1200,6 +1217,8 @@ export const DIALOGUE: Dialogues = {
     ME('You know me too well, {sageShort}.'),
     L('tim', 'Bald guys stick together. Here\'s the thing: every church planter thinks the building is the goal. It\'s not. The building is the RECEIPT.'),
     L('tim', 'Your own sign says it: "{mission}" Notice "build a warehouse" isn\'t on there. {sendingChurch} didn\'t send you out for square footage.'),
+    L('tim', 'Although, for a guy who spent years in a submarine, a windowless metal building probably feels like home.', 'smug'),
+    ME('It has a hum. I find the hum comforting.'),
     L('tim', 'Go love people. Listen more than you talk. When you\'re stuck in a hard conversation, LISTEN first, then do what the listening tells you.'),
     L('tim', 'And if you get really stuck, text me. In encounters, "Ask Wise Sage" is literally me. I answer fast. I don\'t sleep. Bald guys don\'t need to.', 'smug'),
     { effects: [{ set: 'metTim' }] },
@@ -1244,7 +1263,11 @@ export const DIALOGUE: Dialogues = {
     { effects: [{ fund: -6 }, { energy: 30 }, { sfx: 'heal' }] },
     L('jess', 'That\'s the good stuff. Tim tips in sermon illustrations, by the way. Cash is also fine.', 'happy'),
   ],
-  jess_no: [L('jess', 'Dale\'s at the counter, Tim\'s by the window, Whitlock\'s telling someone about his boat. It\'s a normal Tuesday.')],
+  jess_no: [
+    L('jess', 'Dale\'s at the counter, Tim\'s by the window, Whitlock\'s telling someone about his boat. It\'s a normal Tuesday.'),
+    L('jess', 'Also, Pastor, you can stop asking if we\'ll ever carry Dunkin\'. This is Tennessee. You left {hometown} on purpose.', 'smug'),
+    ME('I have made peace with this. Mostly. Regular, extra extra.', 'tired'),
+  ],
   cafeMenu: [N('Chalkboard: "Drip $3 / Big Drip $6 / Fire Extinguisher $6 (pastors only) / Scone: ask Whitlock, he bought them all."')],
   espresso: [N('An espresso machine named "Gerald." Gerald has a temper. Jess speaks Gerald.')],
   pastry: [N('Scones, croissants, one muffin labeled "Harold\'s, do not." Nobody has ever touched Harold\'s muffin.')],
@@ -1513,6 +1536,7 @@ export function ENDING_CREDITS(kind: 'buy' | 'build', g: Game): { text: string; 
   out.push({ text: '' });
   out.push({ text: 'STARRING', color: '#ffd27f' });
   out.push({ text: `${PERSONAL.heroNickname} as himself`, small: true });
+  if (PERSONAL.bio.formerLife) out.push({ text: `(former ${PERSONAL.bio.formerLife}, current pastor, always a podcast)`, small: true });
   out.push({ text: `${PERSONAL.churchFullName} as itself`, small: true });
   out.push({ text: `${PERSONAL.address} - ${PERSONAL.serviceTime}`, small: true });
   out.push({ text: `Sent out by ${PERSONAL.sendingChurch}`, small: true });

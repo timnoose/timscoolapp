@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { generateTileset, generateCharacters, generateUI } from '../engine/textures';
+import { generateTileset, generateCharacters, generateUI, generateHeroFlex } from '../engine/textures';
 import { input } from '../engine/input';
 import { W, H } from '../engine/session';
 import { text } from '../engine/ui';
@@ -13,6 +13,7 @@ export class BootScene extends Phaser.Scene {
     const go = () => {
       generateTileset(this);
       generateCharacters(this);
+      generateHeroFlex(this);
       generateUI(this);
       label.destroy();
       this.scene.start('Title');
