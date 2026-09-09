@@ -39,8 +39,13 @@ const html = `<title>He-Erik-Man Quest</title>
   #t-b { right: 90px; bottom: 24px; width: 56px; height: 56px; border-radius: 28px; line-height: 52px; }
   #t-menu { right: 16px; bottom: 140px; width: 64px; height: 30px; line-height: 26px; font-size: 9px; border-radius: 6px; }
   #nojs { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; font-size: 11px; line-height: 1.8; color: #9aa0b8; }
+  #rotate { display: none; position: absolute; left: 50%; transform: translateX(-50%); top: 260px; width: calc(100% - 28px); padding: 10px 12px; max-width: 360px; box-sizing: border-box; z-index: 5; background: #1a1a2a; border: 2px solid #f4f4f0; border-radius: 8px;
+    font-family: 'Press Start 2P', 'PressStart', monospace; font-size: 8px; line-height: 1.7; color: #f4f4f0; text-align: center; pointer-events: auto; }
+  #rotate b { color: #ffd27f; }
+  #rotate span { display: block; margin-top: 6px; color: #9aa0b8; font-size: 7px; }
+  body.touch #rotate.show { display: block; }
 </style>
-<div id="app"><div id="game"></div></div>
+<div id="app"><div id="game"></div><div id="rotate"><b>&#8635; Tip:</b> turn your phone sideways. The game plays best in landscape.<span>tap to dismiss</span></div></div>
 <div id="touch">
   <div class="tbtn" id="t-up" data-key="up">&#9650;</div>
   <div class="tbtn" id="t-left" data-key="left">&#9664;</div>

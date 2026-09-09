@@ -120,7 +120,7 @@ export class TitleScene extends Phaser.Scene {
     this.tweens.add({ targets: reyes, x: at(23, 28).x, duration: 7000, repeat: -1, ease: 'Linear', repeatDelay: 1500, onRepeat: () => { reyes.x = s.x; } });
     // Tasha on the church steps, facing us
     const t = at(19, 28);
-    this.add.sprite(t.x, t.y, 'char-tasha', 0).setOrigin(0.5, 1).setDepth(10);
+    this.add.sprite(t.x, t.y, 'char-sam', 0).setOrigin(0.5, 1).setDepth(10);
   }
 
   private flyover(): void {

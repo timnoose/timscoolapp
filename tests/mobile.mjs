@@ -10,6 +10,8 @@ try {
   await page.waitForTimeout(300);
   const touchVisible = await page.evaluate(() => document.body.classList.contains('touch') && getComputedStyle(document.getElementById('touch')).display !== 'none');
   check(touchVisible, 'touch controls shown on mobile');
+  const tipShown = () => page.evaluate(() => getComputedStyle(document.getElementById('rotate')).display !== 'none');
+  check(await tipShown(), 'landscape tip shown in portrait');
   await g.shot('m01-title');
   const tap = async (id, hold = 80) => {
     const el = await page.$(`#${id}`);
@@ -46,6 +48,13 @@ try {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.waitForTimeout(500);
   await g.shot('m05-landscape');
+  check(!(await tipShown()), 'landscape tip hidden in landscape');
+  // back to portrait: tapping the tip dismisses it and it stays dismissed
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(400);
+  check(await tipShown(), 'landscape tip returns in portrait');
+  await tap('rotate'); await page.waitForTimeout(200);
+  check(!(await tipShown()), 'tapping the tip dismisses it');
   console.log('errors', g.errors);
   check(g.errors.length === 0, 'no console errors (mobile)');
 } catch (e) { console.error('EXCEPTION', e); failures.push(String(e)); }
