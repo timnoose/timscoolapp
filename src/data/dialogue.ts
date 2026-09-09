@@ -1621,7 +1621,8 @@ export const DIALOGUE: Dialogues = {
 
   // ---------------------------------------------------------------- Random events
   ev_roofLeak: [
-    N('Morning. It rained. The stain has a friend now. Water on the sound booth.'),
+    { effects: [{ set: 'rainToday' }] },
+    N('Morning. It rained. It is still raining. The stain has a friend now. Water on the sound booth.'),
     { if: (g) => g.isAlly('dale'), then: 'ev_roofLeak_dale' },
     { effects: [{ fund: -450 }, { morale: -2 }] },
     N('A roofer patches it. $450. He says "for now" in a way that lingers.'),

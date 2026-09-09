@@ -115,3 +115,59 @@ export const ALLY_NOTES: Record<string, string> = {
   richard: 'Care Pastor and woodworker. Born on post. Builds benches, counters, and peace.',
   eli: 'Discipleship Pastor and Apache pilot. Go Vols. Forgive him.',
 };
+
+/** A place in the world the player should head to next (drives the on-screen marker). */
+export interface QuestTarget { map: string; x: number; y: number; label: string }
+
+const canBuy = (g: Game) => g.state.fund >= BALANCE.buyCost && g.state.morale >= BALANCE.buyMoraleNeeded;
+const canBuild = (g: Game) => g.state.fund >= BALANCE.buildCost && g.state.goodwill >= BALANCE.buildGoodwillNeeded;
+/** Sunday loop: preach if you can, otherwise rest on the couch so Sunday comes around. */
+const sundayLoop = (g: Game): QuestTarget => (g.has('preachedToday')
+  ? { map: 'office', x: 1, y: 4, label: 'Rest (couch)' }
+  : { map: 'church', x: 12, y: 2, label: 'Preach' });
+
+export function questTarget(g: Game): QuestTarget | null {
+  if (g.questIs('intro', 'inactive')) return g.has('introDone') ? { map: 'office', x: 4, y: 2, label: 'Desk' } : null;
+  if (g.questIs('intro', 'active')) return { map: 'church', x: 13, y: 16, label: 'Kyle' };
+  if (g.questIs('hvac', 'active')) {
+    return g.questStage('hvac') >= 2 ? { map: 'church', x: 22, y: 1, label: 'Thermostat' } : { map: 'coffee', x: 8, y: 3, label: 'Dale' };
+  }
+  if (g.questIs('memorial', 'active')) {
+    const st = g.questStage('memorial');
+    if (st === 1) {
+      if (!g.has('minutesRead')) return { map: 'office', x: 7, y: 1, label: 'File cabinet' };
+      if (!g.has('haroldTalked')) return { map: 'coffee', x: 2, y: 9, label: 'Harold' };
+    }
+    return { map: 'town', x: 6, y: 13, label: 'Mrs. Pruitt' };
+  }
+  if (g.questIs('neighbor', 'active')) {
+    if (!g.has('garyResolved')) return { map: 'town', x: 7, y: 27, label: 'Gary' };
+    if (!g.has('lindaResolved')) return { map: 'town', x: 40, y: 34, label: 'Linda' };
+    if (!g.has('tonyaResolved')) return { map: 'town', x: 39, y: 26, label: 'Monique' };
+    return { map: 'town', x: 26, y: 31, label: 'Big Ronnie' };
+  }
+  if (g.questIs('campaign', 'active')) {
+    if (!g.has('eventDone')) return g.has('eventPermit') ? { map: 'town', x: 26, y: 31, label: 'Ronnie (event)' } : { map: 'cityhall', x: 9, y: 1, label: 'Bev (permit)' };
+    if (!g.has('grantDone')) return { map: 'cityhall', x: 14, y: 2, label: 'Paulette (grant)' };
+    if (!g.has('donorDone')) return { map: 'coffee', x: 12, y: 8, label: 'Mr. Whitlock' };
+    return { map: 'church', x: 10, y: 4, label: 'The elders' };
+  }
+  if (g.questIs('elders', 'active')) {
+    const st = g.questStage('elders');
+    if (st === 0) return { map: 'church', x: 10, y: 4, label: 'Elder Doug' };
+    if (st === 1) return { map: 'church', x: 14, y: 4, label: 'Elder Marcus' };
+    if (st === 2) return { map: 'church', x: 12, y: 6, label: 'Elder Janet' };
+    if (canBuy(g)) return { map: 'town', x: 44, y: 10, label: 'Brenda (BUY)' };
+    if (canBuild(g)) return { map: 'town', x: 40, y: 36, label: 'Hank (BUILD)' };
+    return sundayLoop(g);
+  }
+  // between quests the next story beat starts when you step outside / into the church
+  if (g.questIs('hvac', 'done') && g.questIs('memorial', 'inactive')) return { map: 'town', x: 20, y: 28, label: 'Outside' };
+  if (g.questIs('memorial', 'done') && g.questIs('neighbor', 'inactive')) return { map: 'town', x: 20, y: 28, label: 'Outside' };
+  if (g.questIs('neighbor', 'done') && g.questIs('campaign', 'inactive')) return { map: 'town', x: 20, y: 28, label: 'Outside' };
+  if (g.questIs('campaign', 'done') && g.questIs('elders', 'inactive')) return { map: 'church', x: 22, y: 17, label: 'Harvest' };
+  return null;
+}
+
+/** Short names for the marker label when it points at a door. */
+export const MAP_SHORT: Record<string, string> = { town: 'Outside', church: 'Harvest', office: 'Office', coffee: 'Coffee shop', cityhall: 'City Hall' };

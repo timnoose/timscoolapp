@@ -197,3 +197,90 @@ export function generateUI(scene: Phaser.Scene): void {
     tex.refresh();
   }
 }
+
+/** Ambient sprites: quest marker, cars, birds, raindrops. */
+export function generateAmbient(scene: Phaser.Scene): void {
+  const make = (key: string, rows: Rows, pal: Record<string, string>) => {
+    if (scene.textures.exists(key)) return;
+    const tex = scene.textures.createCanvas(key, rows[0].length, rows.length)!;
+    drawRows(tex.getContext(), rows, pal, 0, 0);
+    tex.refresh();
+  };
+  // downward arrow with a dark outline (rotated when it points off-screen)
+  make('marker', [
+    '.xxxxxxxxx.',
+    'xyyyyyyyyyx',
+    'xyywwwwwyyx',
+    '.xyyyyyyyx.',
+    '..xyywyyx..',
+    '...xyyyx...',
+    '....xyx....',
+    '.....x.....',
+  ], { x: '#101014', y: '#ffd27f', w: '#fff3cc' });
+  // top-down cars, facing right (16 x 10)
+  const carRows: Rows = [
+    '....xxxxxxxx....',
+    '..xxbbbbbbbbxx..',
+    '.xbbbwwwbbbbbbx.',
+    'xbbbwnnnwbbbbbbx',
+    'xhbbwnnnwbbbbbrx',
+    'xhbbwnnnwbbbbbrx',
+    'xbbbwwwwwbbbbbbx',
+    '.xbbbbbbbbbbbbx.',
+    '..xxxxxxxxxxxx..',
+    '...aa.....aa....',
+  ];
+  const bodies = ['#c73b3b', '#3a6ea5', '#e8e2d0', '#4a4a52', '#5fa64a'];
+  bodies.forEach((b, i) => make(`car-${i}`, carRows, { x: '#101014', b, w: '#e8f4ff', n: '#1c2a3a', h: '#ffe9a0', r: '#ff5f5f', a: '#22222a' }));
+  // Ronnie-style pickup for variety
+  make('car-5', [
+    '....xxxxxxxx....',
+    '..xxbbbbxxxxxx..',
+    '.xbbwwwbxddddxx.',
+    'xbbwnnnwxddddddx',
+    'xhbwnnnwxddddddx',
+    'xhbwnnnwxddddddx',
+    'xbbwwwwwxddddddx',
+    '.xbbbbbbxddddxx.',
+    '..xxxxxxxxxxxx..',
+    '...aa.....aa....',
+  ], { x: '#101014', b: '#8d6237', w: '#e8f4ff', n: '#1c2a3a', h: '#ffe9a0', d: '#6f4a28', a: '#22222a' });
+  // birds: two flap frames (7 x 4)
+  make('bird-0', ['x.....x', '.x...x.', '..x.x..', '.......'], { x: '#1a1a22' });
+  make('bird-1', ['.......', '..x.x..', '.x...x.', 'x.....x'], { x: '#1a1a22' });
+  make('raindrop', ['b', 'b', 'w', 'w'], { b: '#8fb8e8', w: '#d8ecff' });
+}
+
+/** Overview map: one 4x4 block per tile, colored by the average tile color. */
+export function generateMinimap(scene: Phaser.Scene, map: { id: string; w: number; h: number; fill: string; ground: (string | null)[][]; objects: (string | null)[][] }, block = 4): string {
+  const key = `minimap-${map.id}`;
+  if (scene.textures.exists(key)) return key;
+  const avg = new Map<string, { color: string; cover: number } | null>();
+  const colorOf = (name: string) => {
+    if (avg.has(name)) return avg.get(name)!;
+    const t = TILES[name];
+    if (!t) { avg.set(name, null); return null; }
+    let r = 0, g = 0, b = 0, n = 0, total = 0;
+    for (const row of t.rows) for (const ch of row) {
+      total++;
+      const hex = TILE_PALETTE[ch];
+      if (!hex) continue;
+      r += parseInt(hex.slice(1, 3), 16); g += parseInt(hex.slice(3, 5), 16); b += parseInt(hex.slice(5, 7), 16); n++;
+    }
+    const out = n ? { color: `rgb(${Math.round(r / n)},${Math.round(g / n)},${Math.round(b / n)})`, cover: n / total } : null;
+    avg.set(name, out);
+    return out;
+  };
+  const tex = scene.textures.createCanvas(key, map.w * block, map.h * block)!;
+  const ctx = tex.getContext();
+  for (let y = 0; y < map.h; y++) for (let x = 0; x < map.w; x++) {
+    const gc = colorOf(map.ground[y][x] ?? map.fill);
+    const oName = map.objects[y][x];
+    const oc = oName ? colorOf(oName) : null;
+    const c = oc && oc.cover > 0.35 ? oc : gc;
+    ctx.fillStyle = c ? c.color : '#000';
+    ctx.fillRect(x * block, y * block, block, block);
+  }
+  tex.refresh();
+  return key;
+}

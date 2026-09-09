@@ -33,6 +33,10 @@ Progress auto-saves at doors and after every conversation; **Continue** on the t
 - Five main quests: *The HVAC Has Left the Chat*, *A Grave Misunderstanding*, *Love Thy Actual Neighbor*, *Capital Campaign of Destiny* (permit + HARVEST SLAM wrestling night, a 47-page grant form, a donor with restroom-naming ambitions), and *The Elders aka The Building Committee* (vision, money & the city, the carpet).
 - Twelve turn-based social encounters with Listen / Explain Vision / Offer Coffee / Recruit Volunteer / Set a Boundary / Ask Wise Sage Tim / Call a Meeting, opponent moves like *Reply All*, *We've Never Done It That Way*, *Anonymous Email*, *Let's Form a Subcommittee*, and the legendary *Volunteer With a Truck*.
 - Random events with cooldowns (roof leak, dead soundboard, missing trailer, surprise bills, anonymous gifts, a retired plumber named Walt), a repeatable Sunday-service income loop, resting, coffee.
+- **Sunday service set piece:** the sanctuary fills up (back row first) based on morale, goodwill and allies; pick a sermon title (Kyle hints at the prepped one), amens, offering, then state-aware lobby chatter afterwards. Weeks tick by between Sundays.
+- **Guidance that respects the player:** a bobbing quest marker over the next objective (at the screen edge when it is far, over the right door when it is in another building), a MAP tab with a rendered overview of Clarksville, "you are here" and the next objective, story beats that start when they are ready instead of waiting for a door. The marker can be switched off in SYSTEM.
+- **A living town:** cars that drive on the right, brake for anyone in the road and honk when you make them wait; birds; rain (with sound) on roof-leak days; footsteps; every character has a dialogue voice pitch.
+- **16 awards and a Pastor Report Card** (Listening, Resolve, Neighborliness, Shepherding, Self-care, Language) graded from how you actually played, shown in the credits.
 - Two endings with a cinematic and credits that reflect who became your ally along the way.
 - Original code-drawn pixel art, synthesized chiptune music and sound effects, on-screen phone controls, versioned local saves.
 
@@ -47,6 +51,8 @@ Everything is data; the engine doesn't care whose church it is.
 | Journal titles, objectives, resource help text | `src/data/quests.ts` |
 | Encounters (opponents, tells, effectiveness, moves) | `src/data/encounters.ts` |
 | Money, thresholds, costs, difficulty | `src/data/balance.ts` |
+| Awards and report-card grading | `src/data/awards.ts` |
+| Where the quest marker points (`questTarget`) | `src/data/quests.ts` |
 | Who exists and what they look like (hair, beard, cap, glasses, colors) | `src/data/cast.ts` |
 | Maps, buildings, NPC positions, doors, interactables | `src/data/maps.ts` |
 | Tiles (16x16) | `src/art/tiles.ts` |
@@ -62,7 +68,7 @@ npm run build        # type-check + production build
 npm test             # art validation, encounter balance simulation, full browser playthrough (both endings), mobile checks
 ```
 
-The browser tests use the bundled Playwright + Chromium; see `tests/`.
+The browser tests use the bundled Playwright + Chromium; see `tests/`. Visual spot checks: `node tests/serviceshot.mjs` (Sunday service) and `node tests/worldshot.mjs` (marker, map tab, cars, rain, birds) write screenshots to `tests/out/`.
 
 ## Deploy
 

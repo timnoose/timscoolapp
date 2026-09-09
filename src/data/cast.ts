@@ -189,3 +189,19 @@ export function castName(id: string | undefined): string {
   if (!id) return '';
   return CAST[id]?.name ?? id;
 }
+
+/** Dialogue blip pitch per speaker (Hz). Unlisted speakers get a stable hashed pitch. */
+export const VOICES: Record<string, number> = {
+  erik: 430, erikcap: 430, tim: 640, kyle: 600, brayden: 680, ronnie: 360, doug: 500, marcus: 470, janet: 780,
+  harold: 440, pruitt: 820, gary: 480, linda: 760, tonya: 740, dale: 520, whitlock: 420, bev: 800, paulette: 700,
+  hannah: 760, julie: 740, tanya: 720, sam: 610, richard: 480, eli: 560, jess: 800, brenda: 700, hank: 400,
+  mason: 660, dennis: 620, reyes: 520, member1: 600, member2: 700,
+  thread: 260, form: 300, thermostat: 280, crowd: 340, carpet: 240,
+};
+export function voiceOf(who?: string): number {
+  if (!who) return 760;
+  if (VOICES[who]) return VOICES[who];
+  let h = 0;
+  for (const ch of who) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  return 520 + (h % 8) * 45;
+}

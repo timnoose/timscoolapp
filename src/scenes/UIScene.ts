@@ -5,9 +5,10 @@ import { session, W, H } from '../engine/session';
 import { Game, newGameState, type ResourceChange, type ResourceKey } from '../engine/state';
 import { box, text, wrap, money, COLORS, meter } from '../engine/ui';
 import { portraitKey } from '../engine/textures';
-import { castName } from '../data/cast';
-import { DIALOGUE, TALK, template } from '../data/dialogue';
-import { QUESTS, currentObjective, RESOURCE_HELP, ALLY_NOTES } from '../data/quests';
+import { castName, voiceOf } from '../data/cast';
+import { DIALOGUE, TALK, template, AUTO_DIALOGUE } from '../data/dialogue';
+import { QUESTS, currentObjective, RESOURCE_HELP, ALLY_NOTES, questTarget } from '../data/quests';
+import { townEntrance } from '../engine/route';
 import { applyEffects, isBranch, isChoice, isEffects, isEncounter, isEnd, isFundCheck, isGoto, isLine, type ChoiceOption, type Step } from '../engine/script';
 import type { WorldScene } from './WorldScene';
 import type { Mood } from '../art/portraits';
@@ -65,7 +66,9 @@ export class UIScene extends Phaser.Scene {
   private menuCursor = 0;
   private menuScroll = 0;
   private menuContainer?: Phaser.GameObjects.Container;
+  private menuFx: Phaser.GameObjects.GameObject[] = [];
   private confirmNew = false;
+  private autoFired = '';
 
   // toasts / banners
   private toastText!: Phaser.GameObjects.Text;
@@ -125,7 +128,7 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  onMapChange(): void { /* hook for future per-map UI */ }
+  onMapChange(): void { this.autoFired = ''; }
 
   // ---------------- HUD ----------------
   private drawHud(): void {
@@ -271,6 +274,12 @@ export class UIScene extends Phaser.Scene {
     if (p.warp) { this.world.warp(p.warp.map, p.warp.x, p.warp.y, p.warp.dir ?? 'down'); return; }
     if (p.restDay) { this.world.rest(done); return; }
     done?.();
+    // story beats that would normally wait for the next door: start them now
+    const auto = AUTO_DIALOGUE(session.game, this.world.map.id);
+    if (auto && auto !== this.autoFired) {
+      this.autoFired = auto;
+      this.time.delayedCall(350, () => { if (!this.blocking && this.world && !this.world.isTransitioning) this.startDialogue(auto); });
+    }
   }
 
   private showLine(who: string | undefined, mood: Mood, txt: string): void {
@@ -381,24 +390,29 @@ export class UIScene extends Phaser.Scene {
   }
   closeMenu(): void {
     this.menuOpen = false;
-    this.menuContainer?.destroy();
-    this.menuContainer = undefined;
+    this.destroyMenu();
     audio.sfx('cancel');
   }
-  private renderMenu(): void {
+  private destroyMenu(): void {
+    this.menuFx.forEach((o) => this.tweens.killTweensOf(o));
+    this.menuFx = [];
     this.menuContainer?.destroy();
+    this.menuContainer = undefined;
+  }
+  private renderMenu(): void {
+    this.destroyMenu();
     const c = this.add.container(0, 0).setDepth(500);
     const g = this.add.graphics();
     g.fillStyle(0x000000, 0.6); g.fillRect(0, 0, W, H);
     box(g, 4, 4, W - 8, H - 8);
     c.add(g);
-    const tabs = ['JOURNAL', 'RESOURCES', 'ALLIES', 'AWARDS', 'SYSTEM'];
+    const tabs = ['JOURNAL', 'RESOURCES', 'ALLIES', 'AWARDS', 'MAP', 'SYSTEM'];
     tabs.forEach((t, i) => {
-      const tx = 10 + i * 78;
+      const tx = 10 + i * 64;
       const active = i === this.menuTab;
-      if (active) { g.fillStyle(0x5a6a9a, 1); g.fillRect(tx - 4, 10, 76, 14); }
+      if (active) { g.fillStyle(0x5a6a9a, 1); g.fillRect(tx - 4, 10, 62, 14); }
       const tt = text(this, tx, 13, t, { color: active ? COLORS.accent : COLORS.dim });
-      if (tt.width > 70) tt.setScale(70 / tt.width, 1);
+      if (tt.width > 56) tt.setScale(56 / tt.width, 1);
       c.add(tt);
     });
     g.fillStyle(0xf4f4f0, 1); g.fillRect(8, 26, W - 16, 1);
@@ -448,8 +462,10 @@ export class UIScene extends Phaser.Scene {
         lines.push({ t: `${has ? '[*]' : '[ ]'} ${has ? a.title : '???'}`, color: has ? COLORS.good : COLORS.dim });
         wrap('    ' + (has ? a.desc : a.hint), 62).forEach((l) => lines.push({ t: l, color: COLORS.dim, scale: 0.75 }));
       }
+    } else if (this.menuTab === 4) {
+      this.renderMapTab(c, g);
     } else {
-      const items = ['SAVE GAME', `SOUND: ${audio.muted ? 'OFF' : 'ON'}`, 'NEW GAME', 'CLOSE MENU'];
+      const items = ['SAVE GAME', `SOUND: ${audio.muted ? 'OFF' : 'ON'}`, `QUEST MARKER: ${gm.has('markerOff') ? 'OFF' : 'ON'}`, 'NEW GAME', 'CLOSE MENU'];
       items.forEach((it, i) => lines.push({ t: (i === this.menuCursor ? '> ' : '  ') + it, color: i === this.menuCursor ? COLORS.accent : COLORS.text }));
       lines.push({ t: '' });
       lines.push({ t: `Playtime ${Math.floor(s.playtimeMs / 60000)} min - Week ${s.day} - Save v${s.version}`, color: COLORS.dim, scale: 0.75 });
@@ -480,20 +496,78 @@ export class UIScene extends Phaser.Scene {
       }
       y += heights[i];
     });
-    c.add(text(this, W / 2, H - 12, this.menuTab === 4 ? 'UP/DOWN select  A confirm  B close' : 'LEFT/RIGHT tabs  UP/DOWN scroll  B close', { color: COLORS.dim, align: 'center' }).setOrigin(0.5, 0).setScale(0.75));
+    c.add(text(this, W / 2, H - 12, this.menuTab === 5 ? 'UP/DOWN select  A confirm  B close' : 'LEFT/RIGHT tabs  UP/DOWN scroll  B close', { color: COLORS.dim, align: 'center' }).setOrigin(0.5, 0).setScale(0.75));
     this.menuContainer = c;
   }
 
+  /** Overview map of Clarksville with "you are here" and the next objective. */
+  private renderMapTab(c: Phaser.GameObjects.Container, g: Phaser.GameObjects.Graphics): void {
+    const B = 4, ox = 12, oy = 32;
+    const gm = session.game;
+    const world = this.world;
+    c.add(this.add.image(ox, oy, 'minimap-town').setOrigin(0, 0));
+    g.lineStyle(1, 0xf4f4f0, 1); g.strokeRect(ox - 1, oy - 1, 50 * B + 2, 40 * B + 2);
+    const at = (x: number, y: number) => ({ x: ox + x * B + B / 2, y: oy + y * B + B / 2 });
+    // numbered landmarks
+    const marks: [string, number, number, string][] = [
+      ['1', 24, 24, 'Harvest (the Warehouse)'], ['2', 21, 13, 'Third Place Coffee'], ['3', 35, 12, 'City Hall'],
+      ['4', 44, 5, 'Old chapel (for sale)'], ['5', 41, 35, 'Empty lot (build site)'], ['6', 5, 8, "Mrs. Pruitt's"],
+      ['7', 5, 23, "Gary's"], ['8', 39, 30, "Linda's"], ['9', 39, 22, 'Apartments'], ['P', 21, 4, 'Park'],
+    ];
+    for (const [n, x, y] of marks) {
+      const p = at(x, y);
+      g.fillStyle(0x101018, 0.85); g.fillRect(p.x - 4, p.y - 4, 8, 8);
+      c.add(text(this, p.x, p.y, n, { color: COLORS.text, align: 'center' }).setOrigin(0.5).setScale(0.75));
+    }
+    // next objective (yellow arrow, bobbing)
+    const t = questTarget(gm);
+    let nextLabel = 'Nothing pressing. Explore.';
+    if (t) {
+      const pos = t.map === 'town' ? { x: t.x, y: t.y } : townEntrance(t.map);
+      if (pos) {
+        const p = at(pos.x, pos.y);
+        const arrow = this.add.image(p.x, p.y - 8, 'marker').setDepth(501);
+        c.add(arrow);
+        this.tweens.add({ targets: arrow, y: p.y - 11, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+        this.menuFx.push(arrow);
+      }
+      nextLabel = t.map === 'town' ? t.label : `${t.label} (${world.map.id === t.map ? 'here' : ({ church: 'Harvest', office: 'your office', coffee: 'coffee shop', cityhall: 'City Hall' } as Record<string, string>)[t.map] ?? t.map})`;
+    }
+    // you are here (blinking white dot)
+    const here = world.map.id === 'town' ? { x: world.px, y: world.py } : townEntrance(world.map.id);
+    if (here) {
+      const p = at(here.x, here.y);
+      const dot = this.add.graphics().setDepth(502);
+      dot.fillStyle(0x101018, 1); dot.fillRect(p.x - 3, p.y - 3, 6, 6);
+      dot.fillStyle(0xffffff, 1); dot.fillRect(p.x - 2, p.y - 2, 4, 4);
+      c.add(dot);
+      this.tweens.add({ targets: dot, alpha: 0.15, duration: 320, yoyo: true, repeat: -1 });
+      this.menuFx.push(dot);
+    }
+    // legend
+    const lx = ox + 50 * B + 12;
+    let y = oy;
+    const line = (txt: string, color = COLORS.text, scale = 0.75) => { const tt = text(this, lx, y, txt, { color }); tt.setScale(scale); c.add(tt); y += scale === 1 ? 12 : 9; };
+    line('YOU ARE HERE', COLORS.accent);
+    wrap(world.map.name, 26).forEach((l) => line(l));
+    y += 3;
+    line('NEXT', COLORS.accent);
+    wrap(nextLabel, 26).forEach((l) => line(l, COLORS.good));
+    y += 3;
+    for (const [n, , , name] of marks) line(`${n} ${name}`, COLORS.dim);
+  }
+
   private menuInput(): void {
-    if (input.consume('b') || (this.menuTab !== 4 && input.consume('menu'))) {
+    if (input.consume('b') || (this.menuTab !== 5 && input.consume('menu'))) {
       if (this.confirmNew) { this.confirmNew = false; this.renderMenu(); return; }
       this.closeMenu(); return;
     }
-    if (input.consume('left')) { this.menuTab = (this.menuTab + 4) % 5; this.menuCursor = 0; this.menuScroll = 0; this.confirmNew = false; audio.sfx('move'); this.renderMenu(); }
-    if (input.consume('right')) { this.menuTab = (this.menuTab + 1) % 5; this.menuCursor = 0; this.menuScroll = 0; this.confirmNew = false; audio.sfx('move'); this.renderMenu(); }
-    if (this.menuTab === 4) {
-      if (input.consume('up')) { this.menuCursor = (this.menuCursor + 3) % 4; audio.sfx('move'); this.renderMenu(); }
-      if (input.consume('down')) { this.menuCursor = (this.menuCursor + 1) % 4; audio.sfx('move'); this.renderMenu(); }
+    const TABS = 6, SYS_ITEMS = 5;
+    if (input.consume('left')) { this.menuTab = (this.menuTab + TABS - 1) % TABS; this.menuCursor = 0; this.menuScroll = 0; this.confirmNew = false; audio.sfx('move'); this.renderMenu(); }
+    if (input.consume('right')) { this.menuTab = (this.menuTab + 1) % TABS; this.menuCursor = 0; this.menuScroll = 0; this.confirmNew = false; audio.sfx('move'); this.renderMenu(); }
+    if (this.menuTab === 5) {
+      if (input.consume('up')) { this.menuCursor = (this.menuCursor + SYS_ITEMS - 1) % SYS_ITEMS; audio.sfx('move'); this.renderMenu(); }
+      if (input.consume('down')) { this.menuCursor = (this.menuCursor + 1) % SYS_ITEMS; audio.sfx('move'); this.renderMenu(); }
       if (input.consume('a')) {
         if (this.confirmNew) {
           Game.clearSave();
@@ -507,10 +581,11 @@ export class UIScene extends Phaser.Scene {
         }
         if (this.menuCursor === 0) { session.game.save(); audio.sfx('save'); this.toast('Game saved.'); }
         else if (this.menuCursor === 1) { audio.setMute(!audio.muted); session.game.state.mute = audio.muted; audio.sfx('confirm'); this.renderMenu(); }
-        else if (this.menuCursor === 2) { this.confirmNew = true; audio.sfx('alert'); this.renderMenu(); }
+        else if (this.menuCursor === 2) { session.game.set('markerOff', !session.game.has('markerOff')); audio.sfx('confirm'); this.renderMenu(); }
+        else if (this.menuCursor === 3) { this.confirmNew = true; audio.sfx('alert'); this.renderMenu(); }
         else this.closeMenu();
       }
-    } else {
+    } else if (this.menuTab !== 4) {
       if (input.consume('up') || input.repeat('up')) { this.menuScroll -= 12; this.renderMenu(); }
       if (input.consume('down') || input.repeat('down')) { this.menuScroll += 12; this.renderMenu(); }
     }
@@ -538,7 +613,7 @@ export class UIScene extends Phaser.Scene {
           while (this.typeTimer > speed && this.typed < full.length) {
             this.typeTimer -= speed;
             this.typed++;
-            if (this.typed % 3 === 0) audio.sfx('blip');
+            if (this.typed % 3 === 0) audio.blip(voiceOf(this.lineWho));
           }
           this.dlgText.setText(full.slice(0, this.typed));
           if (input.consume('a')) { this.typed = full.length; this.dlgText.setText(full); }

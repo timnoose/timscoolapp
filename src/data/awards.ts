@@ -26,6 +26,7 @@ export const AWARDS: AwardDef[] = [
   { id: 'neighbors', title: 'Love Thy Actual Neighbor', desc: 'Every neighbor became an ally.', hint: 'Win over Gary, Linda and Monique.', check: (g) => g.isAlly('gary') && g.isAlly('linda') && g.isAlly('tonya') },
   { id: 'slam', title: PERSONAL.wrestlingEventName + ' Champion', desc: 'Pinned the Masked Deacon. Kayfabe, brother.', hint: 'Win the wrestling night.', check: (g) => g.has('eventDone') },
   { id: 'fullHouse', title: 'Full House', desc: 'Filled every chair on a Sunday. Standing room only.', hint: 'Grow attendance until the chairs run out.', check: (g) => g.getStat('maxAttendance') >= 24 },
+  { id: 'traffic', title: 'Traffic Ministry', desc: 'Held up Clarksville traffic three times. They honked. You waved.', hint: 'Stand in the road. Reflect.', check: (g) => g.getStat('honks') >= 3 },
   { id: 'allies8', title: 'It Takes a Town', desc: 'Eight allies by your side.', hint: 'Make eight allies.', check: (g) => g.state.allies.length >= 8 },
   { id: 'carpet', title: 'Carpet Survivor', desc: 'Survived the carpet discussion. Nobody remembers the color.', hint: 'Get through the elders.', check: (g) => g.questIs('elders', 'done') || g.questStage('elders') >= 3 },
   { id: 'ending', title: 'The Building Is the Receipt', desc: 'Got the church a home.', hint: 'Buy or build.', check: (g) => !!g.state.ending || g.has('finished_buy') || g.has('finished_build') },

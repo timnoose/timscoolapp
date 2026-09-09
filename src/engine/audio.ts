@@ -77,12 +77,51 @@ export class AudioEngine {
       this.unlocked = true;
       if (this.ctx.state === 'suspended') this.ctx.resume();
       if (this.current) { const c = this.current; this.current = null; this.play(c); }
+      if (this.rainWanted) this.rain(true);
     } catch { /* audio unavailable */ }
   }
 
   setMute(m: boolean): void {
     this.muted = m;
     if (this.master) this.master.gain.value = m ? 0 : 1;
+  }
+
+  /** Dialogue typing blip at a per-speaker pitch (Hz). */
+  blip(freq = 720): void {
+    if (!this.ctx || !this.master || this.muted) return;
+    const c = this.ctx; const t = c.currentTime;
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = freq < 350 ? 'sawtooth' : 'square';
+    o.frequency.setValueAtTime(freq * 1.25, t);
+    o.frequency.exponentialRampToValueAtTime(freq, t + 0.03);
+    g.gain.setValueAtTime(0.03, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+    o.connect(g).connect(this.master);
+    o.start(t); o.stop(t + 0.05);
+  }
+
+  private rainSrc: AudioBufferSourceNode | null = null;
+  private rainWanted = false;
+  /** Soft looping rain (filtered noise) for rainy days outdoors. */
+  rain(on: boolean): void {
+    this.rainWanted = on;
+    if (!this.ctx || !this.master) return;
+    if (on && !this.rainSrc) {
+      const c = this.ctx;
+      const buf = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
+      const d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < d.length; i++) { last = last * 0.92 + (Math.random() * 2 - 1) * 0.08; d[i] = last * 4; }
+      const src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+      const filt = c.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 1400;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, c.currentTime); g.gain.exponentialRampToValueAtTime(0.05, c.currentTime + 1.2);
+      src.connect(filt).connect(g).connect(this.master);
+      src.start();
+      this.rainSrc = src;
+    } else if (!on && this.rainSrc) {
+      try { this.rainSrc.stop(); } catch { /* already stopped */ }
+      this.rainSrc = null;
+    }
   }
 
   // ---------------- SFX ----------------
@@ -133,6 +172,10 @@ export class AudioEngine {
       case 'bell': beep(1568, 1500, 0.6, 'sine', 0.08); beep(2093, 2000, 0.6, 'sine', 0.04, 0.02); break;
       case 'save': beep(700, 1000, 0.08, 'sine', 0.06); beep(1000, 1400, 0.1, 'sine', 0.06, 0.09); break;
       case 'thud': noise(0.2, 0.1); beep(120, 50, 0.2, 'triangle', 0.1); break;
+      case 'step': noise(0.025, 0.018); break;
+      case 'stepIn': beep(170, 120, 0.03, 'triangle', 0.02); break;
+      case 'honk': beep(392, 392, 0.12, 'sawtooth', 0.05); beep(494, 494, 0.12, 'sawtooth', 0.05); break;
+      case 'chirp': beep(2400, 3000, 0.05, 'sine', 0.025); beep(2800, 2300, 0.06, 'sine', 0.02, 0.09); break;
       default: beep(600, 600, 0.05, 'square', 0.04);
     }
   }

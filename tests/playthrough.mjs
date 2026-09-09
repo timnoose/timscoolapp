@@ -250,7 +250,8 @@ try {
   await g.press('ArrowRight'); await page.waitForTimeout(150); await g.shot('17-menu-resources');
   await g.press('ArrowRight'); await page.waitForTimeout(150); await g.shot('18-menu-allies');
   await g.press('ArrowRight'); await page.waitForTimeout(150); await g.shot('18b-menu-awards');
-  await g.press('ArrowRight'); await page.waitForTimeout(150);
+  await g.press('ArrowRight'); await page.waitForTimeout(250); await g.shot('18c-menu-map');
+  await g.press('ArrowRight'); await page.waitForTimeout(150); await g.shot('18d-menu-system');
   await g.press('Space'); await page.waitForTimeout(200); // save
   await g.press('Escape'); await page.waitForTimeout(200);
   check(!(await page.evaluate(() => window.__heman.game.scene.getScene('UI').menuIsOpen)), 'menu closes with Escape');

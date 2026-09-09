@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { generateTileset, generateCharacters, generateUI, generateHeroFlex, generateCrowd } from '../engine/textures';
+import { generateTileset, generateCharacters, generateUI, generateHeroFlex, generateCrowd, generateAmbient, generateMinimap } from '../engine/textures';
+import { MAPS } from '../data/maps';
 import { input } from '../engine/input';
 import { W, H } from '../engine/session';
 import { text } from '../engine/ui';
@@ -16,6 +17,8 @@ export class BootScene extends Phaser.Scene {
       generateHeroFlex(this);
       generateCrowd(this);
       generateUI(this);
+      generateAmbient(this);
+      generateMinimap(this, MAPS.town);
       label.destroy();
       this.scene.start('Title');
     };

@@ -12,11 +12,16 @@ import { AUTO_DIALOGUE, NPC_VISIBLE, MAP_OVERRIDES, pickRandomEvent } from '../d
 import { BALANCE } from '../data/balance';
 import { TILES } from '../art/tiles';
 import { fakeCurse } from '../data/dialogue';
+import { questTarget, MAP_SHORT } from '../data/quests';
+import { nextDoor } from '../engine/route';
 
 const COUNTER_TILES = new Set(['cafeCounter', 'espresso', 'pastryCase', 'cityCounter', 'counterL', 'counterCoffee', 'counterR', 'grantDesk', 'desk', 'soundDesk', 'laptopTable']);
 const DIR_FRAME: Record<Dir, number> = { down: 0, up: 3, left: 6, right: 9 };
 const DIR_VEC: Record<Dir, [number, number]> = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
 const MOVE_MS = 150;
+
+interface Car { spr: Phaser.GameObjects.Image; axis: 'h' | 'v'; dir: 1 | -1; v: number; stopped: number; honked: boolean }
+interface Bird { spr: Phaser.GameObjects.Image; vx: number; vy: number; phase: number }
 
 interface NpcSprite {
   placement: NpcPlacement;
@@ -46,6 +51,17 @@ export class WorldScene extends Phaser.Scene {
   private ready = false;
   private lastPlaytime = 0;
   private mapLabel?: Phaser.GameObjects.Text;
+  // guidance + living world
+  private marker?: Phaser.GameObjects.Image;
+  private markerLabel?: Phaser.GameObjects.Text;
+  private markerBg?: Phaser.GameObjects.Graphics;
+  private cars: Car[] = [];
+  private nextCar = 0;
+  private birds: Bird[] = [];
+  private nextBirds = 0;
+  private rainFx?: Phaser.GameObjects.Particles.ParticleEmitter;
+  private rainTint?: Phaser.GameObjects.Graphics;
+  private stepToggle = false;
 
   constructor() { super('World'); }
 
@@ -76,6 +92,14 @@ export class WorldScene extends Phaser.Scene {
     this.inService = false;
     if (this.player) { this.tweens.killTweensOf(this.player); this.player.destroy(); }
     this.mapLabel?.destroy();
+    this.marker?.destroy(); this.marker = undefined;
+    this.markerLabel?.destroy(); this.markerLabel = undefined;
+    this.markerBg?.destroy(); this.markerBg = undefined;
+    this.cars.forEach((c) => c.spr.destroy()); this.cars = [];
+    this.birds.forEach((b) => b.spr.destroy()); this.birds = [];
+    this.rainFx?.destroy(); this.rainFx = undefined;
+    this.rainTint?.destroy(); this.rainTint = undefined;
+    audio.rain(false);
   }
 
   loadMap(mapId: string, x: number, y: number, dir: Dir, initial = false): void {
@@ -146,6 +170,13 @@ export class WorldScene extends Phaser.Scene {
     audio.play(def.music);
     if (!initial) this.ui?.onMapChange();
     this.showMapLabel(def.name);
+
+    // quest marker + ambient life
+    this.marker = this.add.image(0, 0, 'marker').setDepth(900).setVisible(false);
+    this.markerLabel = this.add.text(0, 0, '', { fontFamily: 'PressStart', fontSize: '8px', color: '#ffd27f', resolution: 1 }).setOrigin(0.5, 1).setScale(0.75).setDepth(901).setVisible(false);
+    this.markerLabel.setShadow(1, 1, '#000', 0, false, true);
+    this.markerBg = this.add.graphics().setDepth(900);
+    this.setupAmbient();
   }
 
   private showMapLabel(name: string): void {
@@ -203,6 +234,7 @@ export class WorldScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (session.started) session.game.state.playtimeMs += delta;
+    if (this.ready && !this.transitioning) { this.updateMarker(time); this.updateCars(time, delta); this.updateBirds(time, delta); }
     if (this.busy) { this.player.anims.stop(); this.player.setFrame(DIR_FRAME[this.dir]); return; }
     this.updateNpcs(time);
     if (this.moving) return;
@@ -234,6 +266,8 @@ export class WorldScene extends Phaser.Scene {
     }
     this.moving = true;
     this.px = nx; this.py = ny;
+    this.stepToggle = !this.stepToggle;
+    if (this.stepToggle) audio.sfx(this.map.indoor ? 'stepIn' : 'step');
     this.player.anims.play(`char-erik-walk-${want}`, true);
     this.tweens.add({
       targets: this.player,
@@ -365,6 +399,131 @@ export class WorldScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: t.y - 10, alpha: 0, duration: 900, ease: 'Sine.out', onComplete: () => t.destroy() });
   }
 
+  // ---------------- Guidance: quest marker ----------------
+  /** Arrow over the next objective; at the screen edge when it is far; over the right door when it is in another map. */
+  private updateMarker(time: number): void {
+    const m = this.marker, lbl = this.markerLabel, bg = this.markerBg;
+    if (!m || !lbl || !bg) return;
+    const g = session.game;
+    const ui = this.ui;
+    const t = (!g.has('markerOff') && !this.inService && !(ui && ui.menuIsOpen)) ? questTarget(g) : null;
+    const hide = () => { m.setVisible(false); lbl.setVisible(false); bg.clear(); };
+    if (!t) { hide(); return; }
+    let tx = t.x, ty = t.y, label = t.label;
+    if (t.map !== this.map.id) {
+      const d = nextDoor(this.map.id, t.map);
+      if (!d) { hide(); return; }
+      tx = d.x; ty = d.y;
+      label = `${t.label} (${MAP_SHORT[t.map] ?? t.map})`;
+    }
+    if (Math.abs(tx - this.px) + Math.abs(ty - this.py) <= 1) { hide(); return; }
+    const cam = this.cameras.main;
+    const wx = tx * TILE + 8, wy = ty * TILE - 14;
+    const x0 = cam.scrollX + 10, x1 = cam.scrollX + W - 10, y0 = cam.scrollY + 28, y1 = cam.scrollY + H - 12;
+    const bob = Math.round(Math.sin(time / 170) * 2);
+    m.setVisible(true); lbl.setVisible(true).setText(label);
+    if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) {
+      m.setPosition(wx, wy + bob).setRotation(0);
+      lbl.setPosition(wx, wy - 6 + bob);
+    } else {
+      const cx = Phaser.Math.Clamp(wx, x0, x1), cy = Phaser.Math.Clamp(wy, y0, y1);
+      const ang = Math.atan2(wy - cy, wx - cx);
+      m.setPosition(cx, cy).setRotation(ang - Math.PI / 2);
+      const lw = lbl.displayWidth / 2;
+      lbl.setPosition(Phaser.Math.Clamp(cx - Math.cos(ang) * 16, cam.scrollX + lw + 2, cam.scrollX + W - lw - 2), cy - Math.sin(ang) * 16 + 4);
+    }
+    bg.clear();
+    bg.fillStyle(0x101018, 0.65);
+    bg.fillRect(Math.round(lbl.x - lbl.displayWidth / 2 - 2), Math.round(lbl.y - lbl.displayHeight - 1), Math.round(lbl.displayWidth + 4), Math.round(lbl.displayHeight + 2));
+  }
+
+  // ---------------- Living world: cars, birds, rain ----------------
+  private setupAmbient(): void {
+    const g = session.game;
+    if (!this.map.indoor && g.has('rainToday')) {
+      this.rainTint = this.add.graphics().setScrollFactor(0).setDepth(940);
+      this.rainTint.fillStyle(0x1a2a4a, 0.28); this.rainTint.fillRect(0, 0, W, H);
+      this.rainFx = this.add.particles(0, 0, 'raindrop', {
+        x: { min: -20, max: W + 60 }, y: -8,
+        lifespan: 800, speedY: { min: 260, max: 330 }, speedX: { min: -55, max: -35 },
+        quantity: 2, frequency: 12, alpha: { start: 0.85, end: 0.3 },
+      }).setScrollFactor(0).setDepth(945);
+      audio.rain(true);
+    }
+    this.nextCar = this.time.now + 1500 + Math.random() * 3000;
+    this.nextBirds = this.time.now + 5000 + Math.random() * 8000;
+  }
+
+  private occupied(x: number, y: number): boolean {
+    if (x === this.px && y === this.py) return true;
+    return this.npcs.some((n) => n.x === x && n.y === y);
+  }
+
+  spawnCar(axis: 'h' | 'v' = Math.random() < 0.65 ? 'h' : 'v', dir: 1 | -1 = Math.random() < 0.5 ? 1 : -1): void {
+    if (this.map.id !== 'town' || this.cars.length) return;
+    const key = `car-${Math.floor(Math.random() * 6)}`;
+    const mw = this.map.w * TILE, mh = this.map.h * TILE;
+    let spr: Phaser.GameObjects.Image;
+    if (axis === 'h') {
+      const lane = dir === 1 ? 19 : 17; // drive on the right
+      spr = this.add.image(dir === 1 ? -20 : mw + 20, lane * TILE + 8, key).setDepth(10 + lane);
+      if (dir === -1) spr.setFlipX(true);
+    } else {
+      const lane = dir === 1 ? 12 : 14;
+      spr = this.add.image(lane * TILE + 8, dir === 1 ? -20 : mh + 20, key).setDepth(10);
+      spr.setRotation(dir === 1 ? Math.PI / 2 : -Math.PI / 2);
+    }
+    this.cars.push({ spr, axis, dir, v: 0, stopped: 0, honked: false });
+  }
+
+  /** Cars cruise the roads and brake for anyone standing in the lane. */
+  private updateCars(time: number, delta: number): void {
+    if (this.map.id === 'town' && time > this.nextCar) { this.spawnCar(); this.nextCar = time + 6000 + Math.random() * 8000; }
+    const cruise = 72;
+    const mw = this.map.w * TILE, mh = this.map.h * TILE;
+    for (const car of this.cars.slice()) {
+      const s = car.spr;
+      const cx = Math.floor(s.x / TILE), cy = Math.floor(s.y / TILE);
+      let blocked = false, near = false, target = cruise;
+      for (let k = 1; k <= 3; k++) {
+        const tx = car.axis === 'h' ? cx + k * car.dir : cx;
+        const ty = car.axis === 'v' ? cy + k * car.dir : cy;
+        if (this.occupied(tx, ty)) { blocked = true; near = k <= 1; target = near ? 0 : cruise * (k - 1) * 0.3; break; }
+      }
+      if (near) car.v = 0; else car.v += (target - car.v) * Math.min(1, delta / (blocked ? 140 : 420));
+      if (blocked) {
+        car.stopped += delta;
+        if (car.stopped > 1300 && !car.honked) { car.honked = true; audio.sfx('honk'); session.game.stat('honks'); }
+      } else { car.stopped = 0; car.honked = false; }
+      const step = (car.v * delta) / 1000 * car.dir;
+      if (car.axis === 'h') s.x += step; else { s.y += step; s.setDepth(10 + Math.floor(s.y / TILE)); }
+      if (s.x < -40 || s.x > mw + 40 || s.y < -40 || s.y > mh + 40) { s.destroy(); this.cars = this.cars.filter((c) => c !== car); }
+    }
+  }
+
+  private spawnBirds(): void {
+    const cam = this.cameras.main;
+    const fromLeft = Math.random() < 0.5;
+    const n = 2 + Math.floor(Math.random() * 3);
+    const y0 = cam.scrollY + 24 + Math.random() * (H * 0.45);
+    for (let i = 0; i < n; i++) {
+      const spr = this.add.image(fromLeft ? cam.scrollX - 20 - i * 10 : cam.scrollX + W + 20 + i * 10, y0 + (i % 2) * 6, 'bird-0').setDepth(950);
+      this.birds.push({ spr, vx: (fromLeft ? 1 : -1) * (50 + Math.random() * 20), vy: -5 + Math.random() * 10, phase: Math.random() * 1000 });
+    }
+    audio.sfx('chirp');
+  }
+
+  private updateBirds(time: number, delta: number): void {
+    if (this.map.id === 'town' && time > this.nextBirds && !session.game.has('rainToday')) { this.spawnBirds(); this.nextBirds = time + 14000 + Math.random() * 16000; }
+    const cam = this.cameras.main;
+    for (const b of this.birds.slice()) {
+      b.spr.x += (b.vx * delta) / 1000;
+      b.spr.y += ((b.vy + Math.sin((time + b.phase) / 300) * 8) * delta) / 1000;
+      b.spr.setTexture(Math.floor((time + b.phase) / 140) % 2 ? 'bird-1' : 'bird-0');
+      if (b.spr.x < cam.scrollX - 80 || b.spr.x > cam.scrollX + W + 80) { b.spr.destroy(); this.birds = this.birds.filter((x) => x !== b); }
+    }
+  }
+
   // ---------------- Interaction ----------------
   private interact(): void {
     const [dx, dy] = DIR_VEC[this.dir];
@@ -424,6 +583,7 @@ export class WorldScene extends Phaser.Scene {
       g.change('energy', BALANCE.restEnergy);
       g.set('coffeeToday', false);
       g.set('preachedToday', false);
+      g.set('rainToday', false);
       g.state.eventCooldown -= 1;
       let eventId: string | null = null;
       if (g.state.eventCooldown <= 0 && Math.random() < BALANCE.eventChance) {
