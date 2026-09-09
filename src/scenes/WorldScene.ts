@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { MAPS } from '../data/maps';
 import { CAST } from '../data/cast';
-import { TILE, TILE_INDEX, TILE_SOLID } from '../engine/textures';
+import { TILE, TILE_INDEX, TILE_SOLID, CROWD_COUNT } from '../engine/textures';
 import { input } from '../engine/input';
 import { audio } from '../engine/audio';
 import { session, W, H } from '../engine/session';
@@ -40,6 +40,8 @@ export class WorldScene extends Phaser.Scene {
   private npcs: NpcSprite[] = [];
   private bumpAt = 0;
   private bumps = 0;
+  private crowd: Phaser.GameObjects.Sprite[] = [];
+  private inService = false;
   private transitioning = false;
   private ready = false;
   private lastPlaytime = 0;
@@ -69,6 +71,9 @@ export class WorldScene extends Phaser.Scene {
     this.tilemap = undefined;
     this.npcs.forEach((n) => { this.tweens.killTweensOf(n.sprite); n.sprite.destroy(); });
     this.npcs = [];
+    this.crowd.forEach((c) => { this.tweens.killTweensOf(c); c.destroy(); });
+    this.crowd = [];
+    this.inService = false;
     if (this.player) { this.tweens.killTweensOf(this.player); this.player.destroy(); }
     this.mapLabel?.destroy();
   }
@@ -222,7 +227,8 @@ export class WorldScene extends Phaser.Scene {
         audio.sfx('bump');
         this.bumpAt = time;
         this.bumps++;
-        if (this.bumps % 7 === 0) this.mutter(fakeCurse());
+        session.game.stat('bumps');
+        if (this.bumps % 7 === 0) { this.mutter(fakeCurse()); session.game.stat('curses'); }
       }
       return;
     }
@@ -267,6 +273,89 @@ export class WorldScene extends Phaser.Scene {
         this.onMapEntered();
       });
     });
+  }
+
+  // ---------------- Sunday service set piece ----------------
+  private placePlayer(x: number, y: number, dir: Dir): void {
+    this.tweens.killTweensOf(this.player);
+    this.moving = false;
+    this.px = x; this.py = y; this.dir = dir;
+    this.player.setPosition(x * TILE + 8, y * TILE + 16).setDepth(10 + y);
+    this.player.anims.stop(); this.player.setFrame(DIR_FRAME[dir]);
+    const st = session.game.state; st.x = x; st.y = y; st.dir = dir;
+  }
+
+  /** Fill the sanctuary with the congregation (back row first, as is tradition). */
+  startService(): void {
+    if (this.map.id !== 'church' || this.inService) return;
+    this.inService = true;
+    const g = session.game;
+    const n = Math.max(6, Math.min(30, Math.round(8 + g.state.morale * 0.22 + g.state.goodwill * 0.12 + g.state.allies.length * 2 + g.getStat('sundays') * 0.5)));
+    g.set('attendance', n);
+    if (n > g.getStat('maxAttendance')) g.state.stats.maxAttendance = n;
+    const seats: [number, number][] = [];
+    for (const y of [11, 9, 7, 5]) for (const x of [4, 6, 8, 15, 17, 19]) seats.push([x, y]);
+    const standing: [number, number][] = [[10, 13], [13, 13], [11, 13], [12, 13], [9, 13], [14, 13]];
+    const roster: string[] = [];
+    const add = (id: string) => { if (!roster.includes(id)) roster.push(id); };
+    ['doug', 'marcus', 'janet', 'sam', 'tanya', 'hannah', 'julie', 'eli', 'richard', 'member1', 'member2', 'mason', 'dennis'].forEach(add);
+    ['pruitt', 'gary', 'linda', 'tonya', 'harold', 'whitlock', 'dale', 'ronnie'].forEach((id) => { if (g.isAlly(id)) add(id); });
+    if (g.has('reyesTalked')) add('reyes');
+    this.npcs.forEach((np) => { if (np.placement.id !== 'kyle' && np.placement.id !== 'brayden') np.sprite.setVisible(false); });
+    for (let i = 0; i < n; i++) {
+      const pos = i < seats.length ? seats[i] : standing[i - seats.length];
+      if (!pos) break;
+      const key = i < roster.length ? `char-${roster[i]}` : `char-crowd-${(i - roster.length) % CROWD_COUNT}`;
+      const spr = this.add.sprite(pos[0] * TILE + 8, pos[1] * TILE + 16, key, 3).setOrigin(0.5, 1).setDepth(10 + pos[1]).setAlpha(0);
+      this.tweens.add({ targets: spr, alpha: 1, duration: 250, delay: 40 * i });
+      this.crowd.push(spr);
+    }
+    this.placePlayer(12, 3, 'down');
+    audio.play('worship');
+  }
+
+  /** "Amen" floaters over a few congregants (big = the whole room). */
+  amenBurst(big = false): void {
+    if (!this.crowd.length) return;
+    const words = ['Amen!', 'Mm-hm.', "C'mon!", "That's right.", 'Preach.', 'Yes sir.', 'Well!', 'Come on now.'];
+    const count = Math.min(this.crowd.length, big ? 8 : 3);
+    const picked = Phaser.Utils.Array.Shuffle(this.crowd.slice()).slice(0, count);
+    picked.forEach((spr, i) => {
+      this.time.delayedCall(i * 120, () => {
+        if (!spr.active) return;
+        const t = this.add.text(spr.x, spr.y - 26, words[Math.floor(Math.random() * words.length)], { fontFamily: 'PressStart', fontSize: '8px', color: '#ffd27f', resolution: 1 }).setOrigin(0.5, 1).setDepth(500);
+        t.setShadow(1, 1, '#000', 0, false, true);
+        this.tweens.add({ targets: t, y: t.y - 12, alpha: 0, duration: 1100, ease: 'Sine.out', onComplete: () => t.destroy() });
+        this.tweens.add({ targets: spr, y: spr.y - 3, duration: 90, yoyo: true });
+        audio.sfx(big && i === 0 ? 'bell' : 'blip');
+      });
+    });
+    if (big) this.cameras.main.flash(120, 255, 240, 200);
+  }
+
+  /** Coins rise from the congregation to the fund counter. */
+  offeringFx(): void {
+    if (!this.crowd.length) return;
+    const cam = this.cameras.main;
+    const picked = Phaser.Utils.Array.Shuffle(this.crowd.slice()).slice(0, 8);
+    picked.forEach((spr, i) => {
+      this.time.delayedCall(i * 110, () => {
+        if (!spr.active) return;
+        const c = this.add.image(spr.x, spr.y - 12, 'icon-fund').setDepth(600);
+        this.tweens.add({ targets: c, x: cam.scrollX + 10, y: cam.scrollY + 9, duration: 700, ease: 'Cubic.in', onComplete: () => { c.destroy(); audio.sfx('coin'); } });
+      });
+    });
+  }
+
+  /** The congregation heads to the lobby; regular life resumes. */
+  endService(): void {
+    if (!this.inService) return;
+    this.inService = false;
+    this.crowd.forEach((c, i) => this.tweens.add({ targets: c, alpha: 0, duration: 250, delay: 20 * i, onComplete: () => c.destroy() }));
+    this.crowd = [];
+    this.npcs.forEach((np) => np.sprite.setVisible(true));
+    this.placePlayer(12, 3, 'up');
+    audio.play(this.map.music);
   }
 
   /** Small floating text over the player (used for muttered fake curses). */
@@ -331,6 +420,7 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.fadeOut(500, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       g.state.day += 1;
+      g.stat('rests');
       g.change('energy', BALANCE.restEnergy);
       g.set('coffeeToday', false);
       g.set('preachedToday', false);
@@ -345,7 +435,7 @@ export class WorldScene extends Phaser.Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.once('camerafadeincomplete', () => {
           this.transitioning = false;
-          this.ui.toast(`Day ${g.state.day}. Energy restored.`);
+          this.ui.toast(`Week ${g.state.day}. Sunday comes fast. Energy restored.`);
           if (eventId) this.ui.startDialogue(eventId);
           onDone?.();
         });

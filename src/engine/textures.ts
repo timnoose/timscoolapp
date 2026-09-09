@@ -50,6 +50,27 @@ export function generateCharacters(scene: Phaser.Scene): void {
   }
 }
 
+/** A dozen anonymous congregants for Sunday mornings. */
+export const CROWD_COUNT = 12;
+export function generateCrowd(scene: Phaser.Scene): void {
+  const skins = ['#c9a27a', '#ecc9a5', '#f3d9c0', '#8d5a3a', '#5e3a22', '#d4b48c'];
+  const hairs = ['#221812', '#6b4a2a', '#e0c060', '#9a9a9a', '#3a2a4a', '#b04a2a', '#1a1210'];
+  const shirts = ['#d05050', '#5080d0', '#3aa050', '#f0c030', '#9a4ac0', '#2aa0a0', '#ff8200', '#e8e8e8', '#73000a', '#4a4a8a'];
+  const styles: import('../art/characters').HairStyle[] = ['short', 'long', 'bun', 'cap', 'bald', 'short', 'long'];
+  let seed = 7;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  for (let i = 0; i < CROWD_COUNT; i++) {
+    const key = `char-crowd-${i}`;
+    if (scene.textures.exists(key)) continue;
+    const spec = { skin: skins[Math.floor(rnd() * skins.length)], hair: hairs[Math.floor(rnd() * hairs.length)], shirt: shirts[Math.floor(rnd() * shirts.length)], pants: rnd() < 0.5 ? '#2b3a55' : '#3a3a44', hairStyle: styles[Math.floor(rnd() * styles.length)], beard: rnd() < 0.25, glasses: rnd() < 0.2 };
+    const { frames, palette } = buildCharacter(spec);
+    const tex = scene.textures.createCanvas(key, frames.length * CHAR_W, CHAR_H)!;
+    const ctx = tex.getContext();
+    frames.forEach((f, j) => { drawRows(ctx, f, palette, j * CHAR_W, 0); tex.add(j, 0, j * CHAR_W, 0, CHAR_W, CHAR_H); });
+    tex.refresh();
+  }
+}
+
 /** Title-screen flex pose for the hero. */
 export function generateHeroFlex(scene: Phaser.Scene): void {
   const key = 'char-erik-flex';

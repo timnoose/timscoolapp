@@ -19,6 +19,7 @@ import type { Mood } from '../art/portraits';
 import { PERSONAL } from '../config/personal';
 import { BALANCE } from './balance';
 import { money } from '../engine/format';
+import { reportCard, AWARDS } from './awards';
 
 const S = PERSONAL.sayings;
 const L = (who: string, text: string, mood?: Mood): LineStep => ({ who, text, mood });
@@ -33,7 +34,8 @@ export function curseCorrection(): string { return pick(PERSONAL.curseCorrection
 export function template(t: string, g: Game): string {
   const s = g.state;
   return t
-    .replace(/\{curse\}/g, () => fakeCurse())
+    .replace(/\{flag:(\w+)\}/g, (_m, k: string) => String(g.flag(k) ?? ''))
+    .replace(/\{curse\}/g, () => { g.stat('curses'); return fakeCurse(); })
     .replace(/\{oops\}/g, () => curseCorrection())
     .replace(/\{mission\}/g, PERSONAL.mission)
     .replace(/\{address\}/g, PERSONAL.address)
@@ -356,6 +358,68 @@ export function pickRandomEvent(g: Game): string | null {
 }
 
 // =====================================================================
+// Sunday service helpers (sermon titles rotate weekly; lobby chatter reflects the church)
+// =====================================================================
+const SERMONS = [
+  'Fear Not (A Sermon on the HVAC)',
+  'Love Thy Actual Neighbor',
+  'How Do I Give? (No, Really)',
+  'Come and Rest: The Bench Sermon',
+  "The Widow's Mite and the Building Fund",
+  'Blessed Are the Volunteers With Trucks',
+  'Reply All Is Not a Spiritual Gift',
+  'Bigger Barns (But Nicely)',
+  'Ruth, Not Samson (Sorry, Big Kids)',
+];
+function prepSermons(g: Game): void {
+  const week = g.state.day;
+  const base = ((week - 1) * 3) % SERMONS.length;
+  const best = week % 3;
+  for (let i = 0; i < 3; i++) g.set(`sermon${i + 1}`, SERMONS[(base + i) % SERMONS.length] + (i === best ? ' *' : ''));
+  g.set('sermonBest', best);
+  g.set('sermonHit', false);
+}
+function chooseSermon(g: Game, i: number): void {
+  const hit = g.flag('sermonBest') === i;
+  g.set('sermonHit', hit);
+  g.change('morale', hit ? BALANCE.sundayMoraleGain + 2 : BALANCE.sundayMoraleGain);
+  if (hit) g.stat('sermonHits');
+}
+const LOBBY: { when?: (g: Game) => boolean; who: string; text: string }[] = [
+  { when: (g) => g.has('hvacFixed'), who: 'member1', text: 'It was COLD in there. I wore a cardigan. On purpose. What a time to be alive.' },
+  { when: (g) => g.has('hvacFans') && !g.has('hvacFixed'), who: 'member2', text: 'I sat under fan number seven. Fan number seven is the good one. Tell no one.' },
+  { when: (g) => g.isAlly('pruitt'), who: 'pruitt', text: 'Second row. I timed the sermon. Fifty-one minutes. "Roughly."' },
+  { when: (g) => g.isAlly('gary'), who: 'gary', text: 'Nobody parked in front of my mailbox. I checked twice. I feel strange. Good strange.' },
+  { when: (g) => g.isAlly('linda'), who: 'linda', text: 'The praise band hit 84 decibels. I brought a meter. I clapped anyway.' },
+  { when: (g) => g.has('reyesTalked'), who: 'reyes', text: 'Three guys from my unit came. One asked if you really fought in a cage. I said "look at him."' },
+  { when: (g) => g.isAlly('harold'), who: 'harold', text: 'Zero emails this week. Zero. My family is worried about me.' },
+  { when: (g) => g.has('donorDone'), who: 'whitlock', text: 'Nice service. The restroom is spotless. Just saying. Legacy.' },
+  { when: (g) => g.isAlly('dale'), who: 'dale', text: 'Seventy degrees in there. I checked the vents during the second song. Professional habit.' },
+  { when: (g) => g.isAlly('ronnie'), who: 'ronnie', text: 'Truck\'s out front if anybody needs anything moved. Nobody does. I\'m fine. I\'m FINE.' },
+  { who: 'dennis', text: 'Good word. Was the fig tree part about the stain? Blink twice.' },
+  { who: 'mason', text: 'You didn\'t bench during the sermon. I told everyone you would. I have to live with that.' },
+  { who: 'kyle', text: 'Channel 7 held. I don\'t want to talk about how. It involved a paperclip.' },
+  { who: 'richard', text: 'Coffee was a nine. Sermon was a nine. The projector is a four. I can build a projector.' },
+  { who: 'eli', text: 'C-Group sign-ups: four new families. I take no credit. I take some credit. Go Vols.' },
+  { who: 'hannah', text: 'Attendance is logged. Offering is counted. The trailer is where I left it. Go home, Pastor.' },
+  { who: 'julie', text: 'Two first-timers said hey. I said hey back. It\'s a system. The system works.' },
+  { who: 'brayden', text: 'Zero typos today. ZERO. Nobody noticed. Apparently that\'s the job.' },
+  { who: 'doug', text: 'Stacked every chair in eleven minutes. New record. Bench 300.' },
+  { who: 'marcus', text: 'Offering is up. Expenses are up. Big Brown has a new sub-tab. I named it "Ohio."' },
+  { who: 'janet', text: 'Lovely service. The chairs are gray. Have you noticed the chairs are gray? Just noticing.' },
+  { who: 'tanya', text: 'Big Kids memory verse: nailed it. All of them. I bribed nobody. I bribed everybody.' },
+  { who: 'sam', text: 'Little Kids made you a card. It says "PASTR." It\'s on the fridge. We don\'t have a fridge. It\'s on the coffee pot.' },
+];
+function prepLobby(g: Game): void {
+  const pool = LOBBY.filter((l) => !l.when || l.when(g));
+  const conditional = pool.filter((l) => l.when).sort(() => Math.random() - 0.5);
+  const general = pool.filter((l) => !l.when).sort(() => Math.random() - 0.5);
+  const picks = [...conditional.slice(0, 1), ...general].slice(0, 2);
+  if (picks.length < 2) picks.push(...general.slice(0, 2 - picks.length));
+  DIALOGUE.lobby_dyn = [...picks.map((l) => L(l.who, l.text, 'happy')), { goto: 'service_end' }];
+}
+
+// =====================================================================
 // THE DIALOGUE
 // =====================================================================
 export const DIALOGUE: Dialogues = {
@@ -398,7 +462,7 @@ export const DIALOGUE: Dialogues = {
   couch: [
     N('The couch. Brown. Loyal. Slightly concave in the shape of a pastor.'),
     { choice: [
-      { label: 'Rest until tomorrow', goto: 'couch_rest' },
+      { label: 'Sleep. The week flies by.', goto: 'couch_rest' },
       { label: 'Not yet', goto: 'couch_no' },
     ] },
   ],
@@ -438,7 +502,7 @@ export const DIALOGUE: Dialogues = {
     N('You rack the bar. You breathe. You lift.'),
     N('It is not 300. It is close enough that the elders would have no questions.'),
     ME('"' + S.bench300 + '"', 'smug'),
-    { effects: [{ energy: -10, morale: 2, sfx: 'thud' }] },
+    { effects: [{ energy: -10, morale: 2, sfx: 'thud' }, { custom: (g) => g.stat('lifts') }] },
   ],
   bench_admire: [
     ME('Someday, elders. Someday you will all be tested.', 'smug'),
@@ -458,7 +522,7 @@ export const DIALOGUE: Dialogues = {
     N('You put your hands on the pulpit. Your hands put themselves back down.'),
     ME(`I need at least ${BALANCE.sundayEnergyCost} energy to preach. Couch. Coffee. Then Sunday.`, 'tired'),
   ],
-  pulpit_done: [N('You already preached today. Even Sunday only happens once a week. Rest on the office couch to start a new day.')],
+  pulpit_done: [N('You already preached this week. Sunday only happens once a week, thank God. Rest on the office couch and the next one comes fast.')],
   preach: [
     { if: (g) => g.has('hvacFans') && !g.has('hvacFixed') && !g.has('sweatyDone'), then: 'preach_sweaty' },
     { goto: 'preach_normal' },
@@ -477,23 +541,66 @@ export const DIALOGUE: Dialogues = {
     { goto: 'preach_normal' },
   ],
   preach_normal: [
-    N('The band plays. Brayden\'s slides have one typo ("Jesus Lovs You"). Kyle catches the feedback before it howls. Mostly. The livestream has four viewers. One is Kyle checking the livestream.'),
+    N('Sunday. 10:30. Kyle\'s sound check was at 9. It was not at 9.'),
+    { effects: [{ scene: 'serviceStart' }, { custom: (g) => { prepSermons(g); g.change('energy', -BALANCE.sundayEnergyCost); g.set('preachedToday', true); g.inc('services'); g.stat('sundays'); } }] },
+    N('Attendance: {flag:attendance}. The back row filled first, as is tradition.'),
+    { if: (g) => (g.flag('attendance') as number) > 24, then: 'preach_standing', else: 'preach_band' },
+  ],
+  preach_standing: [
+    N('Standing room only. In a warehouse. Doug is beside himself. Doug is also beside Marcus, who is counting.'),
+    { goto: 'preach_band' },
+  ],
+  preach_band: [
+    N('The band plays. Richard is in the monitor, barely. The livestream has four viewers. One is Kyle checking the livestream.'),
+    L('kyle', 'Slides are up. Three titles on the screen. The band prepped the one with the star. Just saying.'),
+    { choice: [
+      { label: '{flag:sermon1}', effects: [{ custom: (g) => chooseSermon(g, 0) }] },
+      { label: '{flag:sermon2}', effects: [{ custom: (g) => chooseSermon(g, 1) }] },
+      { label: '{flag:sermon3}', effects: [{ custom: (g) => chooseSermon(g, 2) }] },
+    ] },
+    { if: (g) => g.has('sermonHit'), then: 'sermon_hit', else: 'sermon_ok' },
+  ],
+  sermon_hit: [
+    N('The room leans in. The band was ready. The slides were ready. Brayden is visibly moved by his own slides.'),
+    { effects: [{ fx: 'amen' }] },
+    N('Somebody says amen. Then Doug. Then, reluctantly, Dennis.'),
+    { effects: [{ fx: 'amen' }] },
+    N('You land the closing point. You LAND it.'),
+    { effects: [{ fx: 'cheer' }] },
+    { goto: 'sermon_end' },
+  ],
+  sermon_ok: [
+    N('You preach. It lands. The band improvises. Brayden finds a slide from 2023 that mostly works.'),
+    { effects: [{ fx: 'amen' }] },
+    N('Somebody says "good word" and means it.'),
+    { effects: [{ fx: 'amen' }] },
+    { goto: 'sermon_end' },
+  ],
+  sermon_end: [
     N('The website says each service is "roughly an hour." Roughly. The word is doing a lot of work today.'),
     { effects: [{ custom: (g) => {
-      const offering = BALANCE.sundayBaseOffering + Math.round(g.state.morale * BALANCE.sundayMoralePerDollar);
+      const attendance = (g.flag('attendance') as number) || 10;
+      const offering = BALANCE.sundayBaseOffering + Math.round(g.state.morale * BALANCE.sundayMoralePerDollar) + attendance * 15;
       g.set('lastOffering', offering);
-      g.change('energy', -BALANCE.sundayEnergyCost);
+      g.set('lastOfferingText', money(offering));
       g.change('fund', offering);
-      g.change('morale', BALANCE.sundayMoraleGain);
-      g.set('preachedToday', true);
-      g.inc('services');
-    } }] },
-    N('You preach. It lands. Somebody says "good word" and means it. The offering comes in.'),
+    } }, { fx: 'offering' }] },
+    N('The offering comes in: {flag:lastOfferingText}. Marcus counts it twice. Hannah counts Marcus.'),
     { if: (g) => (g.flag('services') as number) === 1, then: 'preach_first' },
-    ME('Another Sunday. We\'re still here. That\'s not nothing.', 'happy'),
+    { goto: 'lobby_go' },
   ],
   preach_first: [
-    N('(Sunday services are your steady income: the base offering plus a bonus for congregation morale. You can preach once per day; rest on the couch to start a new day.)'),
+    N('(Sunday services are your steady income: the base offering plus bonuses for morale and attendance. One Sunday per week; rest on the office couch to start the next week. Attendance grows with morale, goodwill and allies.)'),
+    { goto: 'lobby_go' },
+  ],
+  lobby_go: [
+    N('After the service, the lobby. Which is also the sanctuary. Which is also the lobby.'),
+    { effects: [{ custom: (g) => prepLobby(g) }] },
+    { goto: 'lobby_dyn' },
+  ],
+  lobby_dyn: [{ goto: 'service_end' }],
+  service_end: [
+    { effects: [{ scene: 'serviceEnd' }] },
     ME('Another Sunday. We\'re still here. That\'s not nothing.', 'happy'),
   ],
   tv: [
@@ -534,7 +641,7 @@ export const DIALOGUE: Dialogues = {
   ],
   coffee_drink: [
     N('You pour a cup the size of a fire extinguisher. Black. Terrifying. Perfect. You take a donut with sprinkles, which nobody saw.'),
-    { effects: [{ energy: BALANCE.coffeeRefillEnergy, set: 'coffeeToday', sfx: 'heal' }] },
+    { effects: [{ energy: BALANCE.coffeeRefillEnergy, set: 'coffeeToday', sfx: 'heal' }, { custom: (g) => g.stat('coffees') }] },
     ME('Okay. Okay okay okay. Let\'s go.', 'happy'),
   ],
   coffee_skip: [ME('Later. Discipline is a fruit of the Spirit. Coffee is too, probably. Somewhere in the Greek.')],
@@ -836,9 +943,11 @@ export const DIALOGUE: Dialogues = {
     { encounter: 'thread', win: 'thread_win', lose: 'thread_lose' },
   ],
   thread_lose: [
+    { effects: [{ set: 'threadLostOnce' }] },
     L('pruitt', 'Still buzzing. Go rest and try again, dear. The thread will be here. It will always be here.', 'tired'),
   ],
   thread_win: [
+    { effects: [{ custom: (g) => { if (!g.has('threadLostOnce')) g.set('threadFirstTry'); } }] },
     L('pruitt', 'It stopped. It actually stopped.', 'shocked'),
     { goto: 'pruitt_resolve' },
   ],
@@ -1385,7 +1494,7 @@ export const DIALOGUE: Dialogues = {
     ] },
   ],
   jess_buy: [
-    { effects: [{ fund: -6 }, { energy: 30 }, { sfx: 'heal' }] },
+    { effects: [{ fund: -6 }, { energy: 30 }, { sfx: 'heal' }, { custom: (g) => g.stat('coffees') }] },
     L('jess', 'That\'s the good stuff. Tim tips in sermon illustrations, by the way. Cash is also fine.', 'happy'),
   ],
   jess_no: [
@@ -1665,6 +1774,13 @@ export function ENDING_CREDITS(kind: 'buy' | 'build', g: Game): { text: string; 
   out.push({ text: `Fund left over: ${money(s.fund)}`, small: true });
   out.push({ text: `Goodwill ${s.goodwill}   Morale ${s.morale}`, small: true });
   out.push({ text: `Big Brown (the stain): defeated`, small: true });
+  out.push({ text: '' });
+  out.push({ text: 'PASTOR REPORT CARD', color: '#ffd27f' });
+  for (const r of reportCard(g)) {
+    out.push({ text: `${r.subject}: ${r.grade}`, color: r.grade.startsWith('A') ? '#7ce0a0' : r.grade === 'F' || r.grade === 'D' ? '#ff7a7a' : undefined });
+    out.push({ text: r.note, small: true });
+  }
+  out.push({ text: `Awards: ${s.awards.length} of ${AWARDS.length}`, small: true });
   out.push({ text: '' });
   out.push({ text: 'STARRING', color: '#ffd27f' });
   out.push({ text: `${PERSONAL.heroNickname} as himself`, small: true });

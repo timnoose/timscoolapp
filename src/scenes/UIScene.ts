@@ -12,6 +12,7 @@ import { applyEffects, isBranch, isChoice, isEffects, isEncounter, isEnd, isFund
 import type { WorldScene } from './WorldScene';
 import type { Mood } from '../art/portraits';
 import { BALANCE } from '../data/balance';
+import { AWARDS, checkAwards } from '../data/awards';
 
 const CHARS_PER_LINE = 41;
 const LINES_PER_PAGE = 3;
@@ -137,7 +138,7 @@ export class UIScene extends Phaser.Scene {
     this.hudTexts.morale.setText(`${s.morale}`);
     this.hudTexts.energy.setText(`${s.energy}`);
     this.hudTexts.energy.setColor(s.energy < 25 ? COLORS.bad : COLORS.text);
-    this.hudDay.setText(`DAY ${s.day}`);
+    this.hudDay.setText(`WEEK ${s.day}`);
   }
 
   private onResourceChange(c: ResourceChange): void {
@@ -241,6 +242,8 @@ export class UIScene extends Phaser.Scene {
     if (r.restDay) this.pending.restDay = true;
     if (r.ending) this.pending.ending = r.ending;
     if (r.warp) this.pending.warp = r.warp;
+    r.scene?.forEach((sc) => { if (sc === 'serviceStart') this.world.startService(); if (sc === 'serviceEnd') this.world.endService(); });
+    r.fx?.forEach((fx) => { if (fx === 'amen') this.world.amenBurst(); if (fx === 'offering') this.world.offeringFx(); if (fx === 'cheer') this.world.amenBurst(true); });
   }
 
   private jump(id: string): void {
@@ -249,12 +252,18 @@ export class UIScene extends Phaser.Scene {
     this.steps = steps; this.idx = 0; this.next();
   }
 
+  /** Check for newly unlocked awards and celebrate them. */
+  pumpAwards(): void {
+    for (const a of checkAwards(session.game)) this.banner('AWARD UNLOCKED', a.title, 'bell', COLORS.accent);
+  }
+
   private finish(): void {
     this.dialogueActive = false;
     this.dlgContainer.setVisible(false);
     this.closeChoices();
     const p = this.pending; this.pending = {};
     const done = this.onDialogueDone; this.onDialogueDone = undefined;
+    this.pumpAwards();
     session.game.save();
     this.world.refreshNpcs();
     this.updateObjective();
@@ -314,6 +323,7 @@ export class UIScene extends Phaser.Scene {
         input.clear();
         this.drawHud();
         this.pages = [];
+        this.pumpAwards();
         this.jump(result === 'win' ? win : lose);
         this.waitingEncounter = false;
       },
@@ -382,12 +392,14 @@ export class UIScene extends Phaser.Scene {
     g.fillStyle(0x000000, 0.6); g.fillRect(0, 0, W, H);
     box(g, 4, 4, W - 8, H - 8);
     c.add(g);
-    const tabs = ['JOURNAL', 'RESOURCES', 'ALLIES', 'SYSTEM'];
+    const tabs = ['JOURNAL', 'RESOURCES', 'ALLIES', 'AWARDS', 'SYSTEM'];
     tabs.forEach((t, i) => {
-      const tx = 14 + i * 96;
+      const tx = 10 + i * 78;
       const active = i === this.menuTab;
-      if (active) { g.fillStyle(0x5a6a9a, 1); g.fillRect(tx - 4, 10, 92, 14); }
-      c.add(text(this, tx, 13, t, { color: active ? COLORS.accent : COLORS.dim }));
+      if (active) { g.fillStyle(0x5a6a9a, 1); g.fillRect(tx - 4, 10, 76, 14); }
+      const tt = text(this, tx, 13, t, { color: active ? COLORS.accent : COLORS.dim });
+      if (tt.width > 70) tt.setScale(70 / tt.width, 1);
+      c.add(tt);
     });
     g.fillStyle(0xf4f4f0, 1); g.fillRect(8, 26, W - 16, 1);
     const gm = session.game;
@@ -421,18 +433,26 @@ export class UIScene extends Phaser.Scene {
       });
       lines.push({ t: `Goal: BUY needs ${money(BALANCE.buyCost)} + morale ${BALANCE.buyMoraleNeeded}.`, scale: 0.75 });
       lines.push({ t: `      BUILD needs ${money(BALANCE.buildCost)} + goodwill ${BALANCE.buildGoodwillNeeded} + a permit.`, scale: 0.75 });
-      lines.push({ t: `Day ${s.day}. Sunday services (pulpit) raise money.`, scale: 0.75 });
+      lines.push({ t: `Week ${s.day}. Sunday services (pulpit) raise money.`, scale: 0.75 });
     } else if (this.menuTab === 2) {
       if (!s.allies.length) lines.push({ t: 'No allies yet. Help people and they help back.', color: COLORS.dim });
       for (const a of s.allies) {
         lines.push({ t: `* ${castName(a)}`, color: COLORS.blue });
         wrap('    ' + (ALLY_NOTES[a] ?? ''), 62).forEach((l) => lines.push({ t: l, color: COLORS.dim, scale: 0.75 }));
       }
+    } else if (this.menuTab === 3) {
+      lines.push({ t: `${s.awards.length} / ${AWARDS.length} unlocked`, color: COLORS.accent });
+      lines.push({ t: '' });
+      for (const a of AWARDS) {
+        const has = s.awards.includes(a.id);
+        lines.push({ t: `${has ? '[*]' : '[ ]'} ${has ? a.title : '???'}`, color: has ? COLORS.good : COLORS.dim });
+        wrap('    ' + (has ? a.desc : a.hint), 62).forEach((l) => lines.push({ t: l, color: COLORS.dim, scale: 0.75 }));
+      }
     } else {
       const items = ['SAVE GAME', `SOUND: ${audio.muted ? 'OFF' : 'ON'}`, 'NEW GAME', 'CLOSE MENU'];
       items.forEach((it, i) => lines.push({ t: (i === this.menuCursor ? '> ' : '  ') + it, color: i === this.menuCursor ? COLORS.accent : COLORS.text }));
       lines.push({ t: '' });
-      lines.push({ t: `Playtime ${Math.floor(s.playtimeMs / 60000)} min - Day ${s.day} - Save v${s.version}`, color: COLORS.dim, scale: 0.75 });
+      lines.push({ t: `Playtime ${Math.floor(s.playtimeMs / 60000)} min - Week ${s.day} - Save v${s.version}`, color: COLORS.dim, scale: 0.75 });
       lines.push({ t: 'Progress auto-saves at doors and after talks.', color: COLORS.dim, scale: 0.75 });
       if (this.confirmNew) {
         lines.push({ t: '' });
@@ -460,18 +480,18 @@ export class UIScene extends Phaser.Scene {
       }
       y += heights[i];
     });
-    c.add(text(this, W / 2, H - 12, this.menuTab === 3 ? 'UP/DOWN select  A confirm  B close' : 'LEFT/RIGHT tabs  UP/DOWN scroll  B close', { color: COLORS.dim, align: 'center' }).setOrigin(0.5, 0).setScale(0.75));
+    c.add(text(this, W / 2, H - 12, this.menuTab === 4 ? 'UP/DOWN select  A confirm  B close' : 'LEFT/RIGHT tabs  UP/DOWN scroll  B close', { color: COLORS.dim, align: 'center' }).setOrigin(0.5, 0).setScale(0.75));
     this.menuContainer = c;
   }
 
   private menuInput(): void {
-    if (input.consume('b') || (this.menuTab !== 3 && input.consume('menu'))) {
+    if (input.consume('b') || (this.menuTab !== 4 && input.consume('menu'))) {
       if (this.confirmNew) { this.confirmNew = false; this.renderMenu(); return; }
       this.closeMenu(); return;
     }
-    if (input.consume('left')) { this.menuTab = (this.menuTab + 3) % 4; this.menuCursor = 0; this.menuScroll = 0; this.confirmNew = false; audio.sfx('move'); this.renderMenu(); }
-    if (input.consume('right')) { this.menuTab = (this.menuTab + 1) % 4; this.menuCursor = 0; this.menuScroll = 0; this.confirmNew = false; audio.sfx('move'); this.renderMenu(); }
-    if (this.menuTab === 3) {
+    if (input.consume('left')) { this.menuTab = (this.menuTab + 4) % 5; this.menuCursor = 0; this.menuScroll = 0; this.confirmNew = false; audio.sfx('move'); this.renderMenu(); }
+    if (input.consume('right')) { this.menuTab = (this.menuTab + 1) % 5; this.menuCursor = 0; this.menuScroll = 0; this.confirmNew = false; audio.sfx('move'); this.renderMenu(); }
+    if (this.menuTab === 4) {
       if (input.consume('up')) { this.menuCursor = (this.menuCursor + 3) % 4; audio.sfx('move'); this.renderMenu(); }
       if (input.consume('down')) { this.menuCursor = (this.menuCursor + 1) % 4; audio.sfx('move'); this.renderMenu(); }
       if (input.consume('a')) {

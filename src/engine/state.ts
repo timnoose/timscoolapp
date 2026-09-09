@@ -4,7 +4,7 @@
 import { BALANCE } from '../data/balance';
 
 export const SAVE_KEY = 'heerikman-quest-save';
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export type QuestStatus = 'inactive' | 'active' | 'done';
 export interface QuestState { status: QuestStatus; stage: number; outcome?: string }
@@ -30,6 +30,8 @@ export interface GameState {
   mute: boolean;
   playtimeMs: number;
   ending?: 'buy' | 'build';
+  stats: Record<string, number>;
+  awards: string[];
 }
 
 export function newGameState(): GameState {
@@ -51,6 +53,8 @@ export function newGameState(): GameState {
     seenEvents: [],
     mute: false,
     playtimeMs: 0,
+    stats: {},
+    awards: [],
   };
 }
 
@@ -105,6 +109,14 @@ export class Game {
     const cur = this.quest(id);
     this.state.quests[id] = { ...cur, ...patch };
   }
+  /** Increment a play statistic (used for awards and the report card). */
+  stat(name: string, by = 1): number {
+    const v = (this.state.stats[name] ?? 0) + by;
+    this.state.stats[name] = v;
+    return v;
+  }
+  getStat(name: string): number { return this.state.stats[name] ?? 0; }
+  hasAward(id: string): boolean { return this.state.awards.includes(id); }
   isAlly(id: string): boolean { return this.state.allies.includes(id); }
   addAlly(id: string): boolean {
     if (this.isAlly(id)) return false;
@@ -150,5 +162,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   if (v < 2 && typeof merged.energy === 'number' && merged.energy <= 10) merged.energy *= 10;
   // v2 -> v3: eventCooldown introduced
   if (v < 3 && typeof merged.eventCooldown !== 'number') merged.eventCooldown = BALANCE.eventCooldownDays;
+  // v3 -> v4: stats + awards
+  merged.stats = { ...(data.stats ?? {}) };
+  merged.awards = Array.isArray(data.awards) ? [...data.awards] : [];
   return merged;
 }

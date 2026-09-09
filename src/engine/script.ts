@@ -25,6 +25,8 @@ export interface Effect {
   ending?: 'buy' | 'build';
   warp?: { map: string; x: number; y: number; dir?: 'down' | 'up' | 'left' | 'right' };
   custom?: (g: Game) => void;
+  scene?: 'serviceStart' | 'serviceEnd';   // world set pieces
+  fx?: 'amen' | 'offering' | 'cheer';      // world visual effects
 }
 
 export interface LineStep {
@@ -68,11 +70,13 @@ export interface EffectResult {
   questStarted?: string[];
   questDone?: string[];
   allyAdded?: string[];
+  scene?: string[];
+  fx?: string[];
 }
 
 /** Apply a list of effects to the game; returns things the scene must react to. */
 export function applyEffects(g: Game, effects: Effect[]): EffectResult {
-  const res: EffectResult = { sfx: [], questStarted: [], questDone: [], allyAdded: [] };
+  const res: EffectResult = { sfx: [], questStarted: [], questDone: [], allyAdded: [], scene: [], fx: [] };
   for (const e of effects) {
     (['fund', 'goodwill', 'morale', 'energy'] as ResourceKey[]).forEach((k) => {
       if (typeof e[k] === 'number') g.change(k, e[k] as number);
@@ -96,6 +100,8 @@ export function applyEffects(g: Game, effects: Effect[]): EffectResult {
     if (e.ending) { res.ending = e.ending; g.state.ending = e.ending; }
     if (e.warp) res.warp = e.warp;
     if (e.custom) e.custom(g);
+    if (e.scene) res.scene!.push(e.scene);
+    if (e.fx) res.fx!.push(e.fx);
   }
   return res;
 }

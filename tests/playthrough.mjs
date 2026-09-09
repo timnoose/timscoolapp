@@ -249,12 +249,13 @@ try {
   await g.shot('16-menu-journal');
   await g.press('ArrowRight'); await page.waitForTimeout(150); await g.shot('17-menu-resources');
   await g.press('ArrowRight'); await page.waitForTimeout(150); await g.shot('18-menu-allies');
+  await g.press('ArrowRight'); await page.waitForTimeout(150); await g.shot('18b-menu-awards');
   await g.press('ArrowRight'); await page.waitForTimeout(150);
   await g.press('Space'); await page.waitForTimeout(200); // save
   await g.press('Escape'); await page.waitForTimeout(200);
   check(!(await page.evaluate(() => window.__heman.game.scene.getScene('UI').menuIsOpen)), 'menu closes with Escape');
   const saved = await page.evaluate(() => localStorage.getItem('heerikman-quest-save'));
-  check(!!saved && JSON.parse(saved).version === 3, 'save exists with version 3');
+  check(!!saved && JSON.parse(saved).version === 4, 'save exists with version 4');
   // reload and continue
   await page.reload({ waitUntil: 'load' });
   await page.waitForFunction(() => window.__heman?.game?.scene?.isActive('Title'), null, { timeout: 15000 });

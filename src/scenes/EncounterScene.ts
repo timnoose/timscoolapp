@@ -40,6 +40,7 @@ export class EncounterScene extends Phaser.Scene {
   private heroMood: Mood = 'neutral';
   private displayRes = 0;
   private displayEnergy = 0;
+  private listenedOnce = false;
 
   constructor() { super('Encounter'); }
 
@@ -58,6 +59,8 @@ export class EncounterScene extends Phaser.Scene {
     this.cursor = 0;
     this.displayRes = this.st.resolution;
     this.displayEnergy = this.st.energy;
+    this.listenedOnce = false;
+    session.game.stat('encounters');
   }
 
   create(): void {
@@ -196,7 +199,10 @@ export class EncounterScene extends Phaser.Scene {
     if (!u.ok) { audio.sfx('cancel'); this.msg.setText(''); this.flashText(u.reason ?? 'Nope.'); return; }
     audio.sfx('confirm');
     const before = this.st.resolution;
+    if (m === 'listen' && !this.listenedOnce) { this.listenedOnce = true; session.game.stat('listens'); }
     const res: TurnResult = playerMove(this.st, m);
+    if (res.gain >= 999) session.game.stat('truckSolves');
+    if (res.effect === 'backfire') session.game.stat('curses');
     this.heroMood = this.st.energy < 30 ? 'tired' : m === 'boundary' ? 'smug' : 'neutral';
     this.heroPortrait.setTexture(portraitKey(this, 'erik', this.heroMood));
     const playerLines = res.playerText.slice();
@@ -253,6 +259,9 @@ export class EncounterScene extends Phaser.Scene {
     g.state.energy = Math.max(0, Math.min(BALANCE.maxEnergy, this.st.energy));
     if (this.st.moraleDelta) g.change('morale', this.st.moraleDelta);
     if (kind === 'lose') g.change('morale', -BALANCE.encounterLossMorale);
+    if (kind === 'win') { g.stat('encountersWon'); if (!this.listenedOnce && !this.st.sageUsed) g.stat('winsNoListen'); }
+    if (kind === 'lose') { g.stat('encountersLost'); g.stat('curses'); }
+    if (kind === 'retreat') g.stat('retreats');
     if (kind !== 'win' && g.state.energy < 15) g.state.energy = 15; // never strand the player with nothing
     g.set('lastEncounter', kind);
     this.cameras.main.fadeOut(250, 0, 0, 0);
