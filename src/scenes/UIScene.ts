@@ -305,15 +305,17 @@ export class UIScene extends Phaser.Scene {
     this.waitingEncounter = true;
     this.dlgContainer.setVisible(false);
     this.closeChoices();
+    this.pages = []; // nothing to advance while the encounter runs
     this.scene.launch('Encounter', {
       id,
       onDone: (result: 'win' | 'lose') => {
-        this.waitingEncounter = false;
         this.scene.wake('World');
         this.scene.wake('UI');
         input.clear();
         this.drawHud();
-        this.time.delayedCall(50, () => this.jump(result === 'win' ? win : lose));
+        this.pages = [];
+        this.jump(result === 'win' ? win : lose);
+        this.waitingEncounter = false;
       },
     });
     this.scene.sleep('World');

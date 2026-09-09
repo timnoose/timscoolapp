@@ -80,7 +80,17 @@ try {
     }
     throw new Error('runUntilFree: stuck');
   }
+  async function restViaCouch() {
+    await g.teleport('office', 2, 5);
+    await runUntilFree();
+    await faceAndTalk('ArrowUp');
+    await runUntilFree({ choice: 0 });
+    await page.waitForTimeout(200);
+    await runUntilFree();
+    console.log('  (rested: day ' + (await g.state()).day + ', energy ' + (await g.state()).energy + ')');
+  }
   async function talk(map, x, y, dir, opts = {}) {
+    if (!opts.noRest && (await g.state()).energy < 55) await restViaCouch();
     await g.teleport(map, x, y);
     await page.waitForTimeout(150);
     await runUntilFree(); // any auto dialogue on entering
@@ -153,7 +163,6 @@ try {
   await brief('after linda:');
   await talk('town', 39, 27, 'ArrowUp', { choice: 0 });
   check((await flags()).tonyaResolved === true, 'Tonya resolved');
-  await page.evaluate(() => { window.__heman.session.game.state.energy = 80; });
   await talk('town', 26, 32, 'ArrowUp', { choice: 2 });
   check((await quest('neighbor')).status === 'done', 'neighbor quest done via block party');
   const st3 = await g.state();
@@ -174,7 +183,6 @@ try {
   check((await flags()).donorDone === true, 'donor done');
   // Wrestling: need $1200 + 20 energy. Ensure energy via state if needed.
   let s4 = await g.state();
-  if (s4.energy < 30) { await page.evaluate(() => { window.__heman.session.game.state.energy = 80; }); }
   r = await talk('town', 26, 32, 'ArrowUp', { choice: 0 });
   check(r.includes('win'), 'won Harvest Slam: ' + r);
   check((await flags()).eventDone === true, 'event done');
@@ -185,13 +193,10 @@ try {
   // ---------- Q5 Elders ----------
   await g.teleport('church', 12, 10); await runUntilFree();
   check((await quest('elders')).status === 'active', 'elders auto-started in church');
-  if ((await g.state()).energy < 40) await page.evaluate(() => { window.__heman.session.game.state.energy = 90; });
   r = await talk('church', 10, 5, 'ArrowUp');
   check(r.includes('win'), 'won Doug: ' + r);
-  if ((await g.state()).energy < 40) await page.evaluate(() => { window.__heman.session.game.state.energy = 90; });
   r = await talk('church', 14, 5, 'ArrowUp');
   check(r.includes('win'), 'won Marcus: ' + r);
-  if ((await g.state()).energy < 40) await page.evaluate(() => { window.__heman.session.game.state.energy = 90; });
   r = await talk('church', 12, 7, 'ArrowUp');
   check(r.includes('win'), 'won Carpet: ' + r);
   check((await quest('elders')).stage === 3, 'elders stage 3 (decision)');
@@ -203,19 +208,21 @@ try {
     loops++;
     const before = await g.state();
     if (before.energy >= 35 && !before.flags.preachedToday) {
-      await talk('church', 12, 3, 'ArrowUp', { choice: 0 });
+      await talk('church', 12, 3, 'ArrowUp', { choice: 0, noRest: true });
       const after = await g.state();
       check(after.fund > before.fund, `preaching raised money (${before.fund} -> ${after.fund})`);
       // preaching twice the same day must not pay twice
-      await talk('church', 12, 3, 'ArrowUp', { choice: 0 });
+      await talk('church', 12, 3, 'ArrowUp', { choice: 0, noRest: true });
       const after2 = await g.state();
       check(after2.fund === after.fund, 'no double offering on the same day');
     }
-    await talk('office', 2, 5, 'ArrowUp', { choice: 0 }); // couch -> rest
+    await talk('office', 2, 5, 'ArrowUp', { choice: 0, noRest: true }); // couch -> rest
     await page.waitForTimeout(300);
     await runUntilFree();
   }
   const s5 = await g.state();
+  console.log('random events seen:', s5.seenEvents);
+  check(s5.seenEvents.length > 0, 'at least one random event fired during rests');
   console.log('after grind:', { fund: s5.fund, goodwill: s5.goodwill, morale: s5.morale, day: s5.day, loops });
   check(s5.fund >= 48000, 'fund reached buy threshold via recovery loop');
 

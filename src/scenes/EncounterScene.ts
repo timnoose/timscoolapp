@@ -142,7 +142,7 @@ export class EncounterScene extends Phaser.Scene {
     MENU_ITEMS.forEach((m, i) => {
       const col = i < 4 ? 0 : 1;
       const row = i % 4;
-      const x = 14 + col * 128;
+      const x = 14 + col * 148;
       const y = 158 + row * 18;
       const usable = m === 'retreat' ? { ok: true } : canUse(s, m);
       const name = m === 'retreat' ? 'Step Away' : MOVE_INFO[m].name;
@@ -159,7 +159,7 @@ export class EncounterScene extends Phaser.Scene {
     // description panel
     const sel = MENU_ITEMS[this.cursor];
     const dg = this.add.graphics();
-    dg.fillStyle(0xf4f4f0, 1); dg.fillRect(268, 156, 1, 76);
+    dg.fillStyle(0xf4f4f0, 1); dg.fillRect(292, 156, 1, 76);
     c.add(dg);
     let desc = '';
     if (sel === 'retreat') desc = 'Leave for now. No morale hit. Come back after a rest.';
@@ -174,12 +174,12 @@ export class EncounterScene extends Phaser.Scene {
         desc += `\n${label}`;
       }
     }
-    const t = text(this, 274, 158, wrap(desc, 19).slice(0, 7).join('\n'), { color: COLORS.dim });
+    const t = text(this, 297, 158, wrap(desc, 16).slice(0, 6).join('\n'), { color: COLORS.dim });
     t.setScale(0.75);
     c.add(t);
     const hint = hintFor(s);
     if (hint && this.phase === 'menu') {
-      const ht = text(this, 274, 222, hint, { color: COLORS.good }).setScale(0.75);
+      const ht = text(this, 297, 214, wrap(hint, 16).slice(0, 2).join('\n'), { color: COLORS.good }).setScale(0.75);
       c.add(ht);
     }
     this.menuContainer = c;

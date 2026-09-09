@@ -58,14 +58,14 @@ export interface EncounterState {
   sageName: string;
 }
 
-export const MOVE_INFO: Record<MoveId, { name: string; desc: string }> = {
-  listen: { name: 'Listen', desc: 'Learn what they actually need. Reveals the best approach.' },
-  vision: { name: 'Explain Vision', desc: 'Cast the vision. Strong once you know what they care about.' },
-  coffee: { name: 'Offer Coffee', desc: 'Everyone softens over coffee. Restores a little energy.' },
-  volunteer: { name: 'Recruit Volunteer', desc: 'Many hands. Better with a Volunteer With a Truck.' },
-  boundary: { name: 'Set a Boundary', desc: 'Kind but firm. Great vs. email chains, bad vs. grief.' },
-  sage: { name: 'Ask Wise Sage', desc: 'Phone a friend. Reveals the weakness. Once per talk.' },
-  meeting: { name: 'Call a Meeting', desc: 'Cuts through subcommittees and resistance. Costs energy.' },
+export const MOVE_INFO: Record<MoveId, { name: string; short: string; desc: string }> = {
+  listen: { name: 'Listen', short: 'Listen', desc: 'Learn what they actually need. Reveals the best approach.' },
+  vision: { name: 'Explain Vision', short: 'Vision', desc: 'Cast the vision. Strong once you know what they care about.' },
+  coffee: { name: 'Offer Coffee', short: 'Coffee', desc: 'Everyone softens over coffee. Restores a little energy.' },
+  volunteer: { name: 'Recruit Volunteer', short: 'Volunteer', desc: 'Many hands. Better with a Volunteer With a Truck.' },
+  boundary: { name: 'Set a Boundary', short: 'Boundary', desc: 'Kind but firm. Great vs. email chains, bad vs. grief.' },
+  sage: { name: 'Ask Wise Sage', short: 'Sage', desc: 'Phone a friend. Reveals the weakness. Once per talk.' },
+  meeting: { name: 'Call a Meeting', short: 'Meeting', desc: 'Cuts through subcommittees and resistance. Costs energy.' },
 };
 
 export const BASE_POWER: Record<MoveId, number> = {
@@ -235,5 +235,5 @@ export function hintFor(st: EncounterState): string | null {
     .filter((x) => x.e === 'super' || x.e === 'good')
     .sort((a, b) => (a.e === 'super' ? -1 : 1) - (b.e === 'super' ? -1 : 1));
   if (!best.length) return null;
-  return `Try: ${best.map((b) => MOVE_INFO[b.m].name).join(' / ')}`;
+  return `Try: ${best.map((b) => MOVE_INFO[b.m].short).join(' / ')}`;
 }
