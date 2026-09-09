@@ -46,6 +46,15 @@ export function template(t: string, g: Game): string {
     .replace(/\{post\}/g, PERSONAL.armyPost)
     .replace(/\{groups\}/g, PERSONAL.groupsName)
     .replace(/\{family\}/g, PERSONAL.bio.family)
+    .replace(/\{richard\}/g, PERSONAL.staff.carePastor.split(' ')[0])
+    .replace(/\{eli\}/g, PERSONAL.staff.discipleshipPastor.split(' ')[0])
+    .replace(/\{hannah\}/g, PERSONAL.staff.operations.split(' ')[0])
+    .replace(/\{julie\}/g, PERSONAL.staff.assistant.split(' ')[0])
+    .replace(/\{shop\}/g, PERSONAL.staff.carePastorShop)
+    .replace(/\{rival\}/g, PERSONAL.staff.rivalTeam)
+    .replace(/\{book\}/g, PERSONAL.bio.book)
+    .replace(/\{firstPlant\}/g, PERSONAL.bio.firstPlant)
+    .replace(/\{hometownSC\}/g, PERSONAL.bio.hometown)
     .replace(/\{formerChurch\}/g, PERSONAL.bio.formerChurch)
     .replace(/\{hometown\}/g, PERSONAL.bio.hometownRegion)
     .replace(/\{hero\}/g, PERSONAL.heroName)
@@ -79,11 +88,32 @@ export const TALK: Record<string, (g: Game) => string> = {
     return 'kyle_idle';
   },
   brayden: (g) => (g.has('braydenHelped') ? 'brayden_after' : 'brayden'),
-  tasha: (g) => {
+  sam: (g) => {
     if (!g.has('tashaAsked')) return 'tasha_intro';
     if (g.has('tashaAsked') && !g.has('braydenHelped')) return 'tasha_waiting';
     return 'tasha_after';
   },
+  tanya: (g) => (g.has('masonTalked') ? 'tanya_mason' : 'tanya'),
+  richard: (g) => {
+    if (g.questIs('memorial', 'active') && g.questStage('memorial') >= 1 && !g.has('richardBench')) return 'richard_bench';
+    if (g.questIs('elders', 'done')) return 'richard_end';
+    if (!g.has('richardTalked')) return 'richard_first';
+    return 'richard_idle';
+  },
+  eli: (g) => {
+    if (g.questIs('elders', 'done')) return 'eli_end';
+    if (g.has('reyesTalked') && !g.has('eliReyes')) return 'eli_reyes';
+    if (!g.has('eliTalked')) return 'eli_first';
+    return 'eli_idle';
+  },
+  hannah: (g) => {
+    if (g.questIs('campaign', 'active') && !g.has('eventPermit') && !g.has('hannahForm')) return 'hannah_form';
+    if (g.questIs('elders', 'active') && g.questStage('elders') === 1 && !g.has('hannahSheet')) return 'hannah_sheet';
+    if (g.questIs('elders', 'done')) return 'hannah_end';
+    if (!g.has('hannahTalked')) return 'hannah_first';
+    return 'hannah_idle';
+  },
+  julie: (g) => (g.has('julieTalked') ? 'julie_idle' : 'julie_first'),
   doug: (g) => {
     if (g.questIs('elders', 'active')) {
       const st = g.questStage('elders');
@@ -393,8 +423,9 @@ export const DIALOGUE: Dialogues = {
     { effects: [{ stage: ['memorial', 2] }] },
   ],
   bookshelf: [
-    N('Commentaries, a Greek lexicon, "Church Planting for Regular People" by {sage}, a well-worn WWE almanac, a submarine qualification manual, and a podcast microphone still in the box.'),
-    ME('All of these are theology if you read them right. The microphone is for the podcast. There is always a podcast.'),
+    N('Commentaries, a Greek lexicon, "Church Planting for Regular People" by {sage}, a well-worn WWE almanac, a submarine qualification manual, a copy of "{book}" with your chapter dog-eared, and a podcast microphone still in the box.'),
+    N('On the top shelf: a Star Wars figure, a softball, a whistle from your coaching days, and a seminary textbook with a bookmark that has not moved since March.'),
+    ME('All of these are theology if you read them right. The microphone is for the podcast. There is always a podcast. The MDiv is "in progress." It is also pursuing ME.', 'tired'),
   ],
   benchPress: [
     N('A bench press. In a pastor\'s office. Of course.'),
@@ -471,7 +502,7 @@ export const DIALOGUE: Dialogues = {
     { if: (g) => g.isAlly('gary'), then: 'tv_gary' },
     ME('One day. One glorious, pixel-dense day.'),
   ],
-  tv_gary: [ME('Gary says he can wire one. Gary says a lot of things. Gary is usually right.', 'smug')],
+  tv_gary: [ME('Gary says he can wire one. Gary says a lot of things. Gary is usually right.', 'smug'), ME('We could run the opening crawl before service. A long time ago, in a warehouse far, far away...', 'happy')],
   thermostat: [
     { if: (g) => g.has('hvacFixed'), then: 'thermostat_fixed' },
     { if: (g) => g.has('hvacFans'), then: 'thermostat_fans' },
@@ -585,13 +616,97 @@ export const DIALOGUE: Dialogues = {
   ],
   brayden_after: [L('brayden', 'I did the nursery thing. A toddler called me "Bread." I answer to Bread now.', 'happy')],
   tasha_intro: [
-    L('tasha', 'Pastor. Harvest Babees, Harvest Tots, Little Kids, Big Kids. Four classes. One helper. The helper is me.', 'tired'),
-    L('tasha', 'The Tots have organized. One of them has a clipboard. I need a body. Any body. A teenager. A deacon. A tall dog.'),
+    L('sam', 'Pastor. Harvest Little Kids. Eleven preschoolers Sunday and one helper. The helper is me.', 'tired'),
+    L('sam', 'I started "helping in the back" one time in 2023 and now I have a title. That\'s how they get you. The Tots have organized. One of them has a clipboard.'),
+    L('sam', 'I need a body. Any body. A teenager. A deacon. A tall dog.'),
     ME('I\'ll find someone. Brayden owes me for the typos.'),
     { effects: [{ set: 'tashaAsked' }] },
   ],
-  tasha_waiting: [L('tasha', 'Any luck? The toddlers are organizing. One of them has a clipboard.', 'shocked')],
-  tasha_after: [L('tasha', 'Brayden showed up! The Harvest Tots call him Bread. He seems at peace with it. The Big Kids call him "sir." He does not.', 'happy')],
+  tasha_waiting: [L('sam', 'Any luck? Wesley has started calling the clipboard kid "boss."', 'shocked')],
+  tasha_after: [L('sam', 'Brayden showed up! The Little Kids call him Bread. He seems at peace with it. Wesley got him to sit criss-cross applesauce. Nobody has ever gotten Brayden to do that.', 'happy')],
+  tanya: [
+    L('tanya', 'Harvest Big Kids. First through fifth. I\'ve been here since almost the beginning, which means I remember the living room.'),
+    L('tanya', 'Big Kids have questions. Today\'s: "Is the ceiling stain in the Bible?" I said "look it up." They are looking it up.', 'smug'),
+  ],
+  tanya_mason: [
+    L('tanya', 'Mason told the entire Big Kids class you bench 300. Now the lesson is about Samson and I have lost the room.', 'tired'),
+    ME('Samson is a fine lesson.'),
+    L('tanya', 'The lesson was on Ruth, Pastor.'),
+  ],
+  richard_first: [
+    L('richard', 'Pastor. Care Pastor {richard}, reporting from the coffee station, which I also built.'),
+    L('richard', 'Born on post, raised in Clarksville. I\'m the only person in this church the Army can\'t transfer.', 'smug'),
+    ME('You built the counter, the welcome table, and I\'m told the crooked shelf in my office.'),
+    L('richard', '{shop}. Self-taught. YouTube-assisted. The shelf is level; your office is not.'),
+    { effects: [{ set: 'richardTalked' }, { morale: 2 }] },
+  ],
+  richard_idle: [
+    { if: (g) => g.has('preachedToday'), then: 'richard_idle2' },
+    L('richard', 'Good cup of coffee this morning. I judge every Sunday by the coffee first and the sermon second. The coffee was a nine.'),
+  ],
+  richard_idle2: [L('richard', 'Master\'s in worship, and I still can\'t get Kyle to turn me up in the monitor. That\'s ministry.', 'tired')],
+  richard_bench: [
+    L('richard', 'Heard about the Pruitt bench. Before you spend money moving stone: I can build one. Cedar. Her parents\' names carved by hand.'),
+    L('richard', '{shop} runs on Saturdays and stubbornness. Say the word.'),
+    ME('Consider the word said.'),
+    { effects: [{ set: 'richardBench' }, { ally: 'richard' }] },
+    N('(Richard\'s workshop makes the bench restoration free.)'),
+  ],
+  richard_end: [L('richard', 'I\'ll build the new welcome desk. And the coffee bar. And, if nobody stops me, a pulpit that isn\'t a music stand.', 'happy')],
+  eli_first: [
+    L('eli', 'Pastor. Discipleship Pastor {eli}. Also: Apache pilot, {post}. Also: born in California, and yes, I know.'),
+    ME('We\'re working on the California thing.'),
+    L('eli', 'I run the {groups}. Sign-ups are up. Casseroles are up. Completed studies are... consistent.', 'smug'),
+    L('eli', 'One more thing. Go {rival}.', 'happy'),
+    ME('Forgive him, Lord. He knows exactly what he does.', 'angry'),
+    { effects: [{ set: 'eliTalked' }, { morale: 2 }] },
+  ],
+  eli_idle: [
+    L('eli', 'Reyes said he\'s on the tech team now. I told him "holding a cable" counts. It does count. Everything counts.'),
+    L('eli', 'Also, the 9:45 flyover? Not me. Probably not me. I\'m not allowed to say.', 'smug'),
+  ],
+  eli_reyes: [
+    L('eli', 'You met Reyes. Good. Military Missions was my whole job before Discipleship, and it never really stopped.'),
+    L('eli', 'Half this church PCSes every couple of years. We plant people in other churches all over the world and we didn\'t even mean to. That\'s the fourth line of the mission, Pastor.'),
+    ME('"Plant churches." Huh. We\'ve been doing it by accident.', 'shocked'),
+    { effects: [{ set: 'eliReyes' }, { ally: 'eli' }, { goodwill: 3 }, { morale: 3 }] },
+  ],
+  eli_end: [L('eli', 'A building with a real classroom. The {groups} can meet somewhere that isn\'t a hallway we don\'t have. Go {rival}.', 'happy')],
+  hannah_first: [
+    L('hannah', 'Director of Operations. Started as Ministry Assistant. Now I have a binder for the binders.'),
+    L('hannah', 'Sundays run because someone printed the thing, plugged in the thing, and texted the person who forgot the thing. That someone is me. You\'re welcome.'),
+    ME('Hannah, I would have lost the trailer by now without you.'),
+    L('hannah', 'You DID lose the trailer. I found it. It\'s in the binder.', 'smug'),
+    { effects: [{ set: 'hannahTalked' }, { morale: 2 }] },
+  ],
+  hannah_idle: [L('hannah', 'Someday Eli and I are planting a church of our own. He\'ll fly there. I\'ll bring the binders.', 'happy')],
+  hannah_form: [
+    L('hannah', 'You\'re going to City Hall about the wrestling permit. Take this.'),
+    N('Hannah hands you a folder. Inside: Special Event Permit, Form 12-C, filled out, signed, with a sticky note that says "Bev will pretend this doesn\'t exist. It exists."'),
+    ME('How did you know the form number?'),
+    L('hannah', 'Operations, Pastor. I know all the form numbers. I know Bev\'s lunch schedule.', 'smug'),
+    { effects: [{ set: 'hannahForm' }, { setValue: ['bevStart', 25] }, { ally: 'hannah' }] },
+    N('(Hannah gave you a head start on Bev.)'),
+  ],
+  hannah_sheet: [
+    L('hannah', 'Before you sit down with Marcus: here\'s the budget, the timeline, and the city checklist. Tabbed. Color-coded.'),
+    ME('You made Marcus a spreadsheet?'),
+    L('hannah', 'I made Marcus a BETTER spreadsheet. Don\'t tell him.', 'smug'),
+    { effects: [{ set: 'hannahSheet' }, { custom: (g) => g.set('marcusStart', ((g.flag('marcusStart') as number) || 0) + 10) }] },
+    N('(Hannah gave you a head start on Marcus.)'),
+  ],
+  hannah_end: [L('hannah', 'New building, new binder. It has tabs. The tabs have tabs.', 'happy')],
+  julie_first: [
+    L('julie', 'Hi y\'all! {julie}, Ministry Assistant. Started coming in April, joined in May, on staff since. This place moves FAST.', 'happy'),
+    L('julie', 'When I\'m not here I\'m tattooing. Speaking of: your forearm. I have notes.'),
+    ME('The tattoo is fine.'),
+    L('julie', 'The tattoo is fine. The LINE WORK is a conversation.', 'smug'),
+    L('julie', 'Anyway, if you see me around, come say hey! I\'m the one with three crazy dogs and a laminator.'),
+    { effects: [{ set: 'julieTalked' }, { goodwill: 1 }, { morale: 2 }] },
+  ],
+  julie_idle: [
+    L('julie', 'The Comms team has been informed the font is FINE. The old logo is what needs to be burned. I will design the bonfire flyer.', 'smug'),
+  ],
   doug_idle: [
     L('doug', 'Pastor. I built that coffee counter. With these hands. Two-by-fours and prayer.'),
     L('doug', '"' + S.bench300 + '" That\'s what you said, right? I got the elders on a program.', 'smug'),
@@ -731,7 +846,8 @@ export const DIALOGUE: Dialogues = {
     L('pruitt', 'Now. What do we do about my parents?'),
     ME('Three ideas. You pick. It\'s your family.'),
     { choice: [
-      { label: `Restore it: move the bench back (${money(BALANCE.memorialRestore)})`, goto: 'memorial_restore', disabled: (g) => !g.isAlly('ronnie') && g.state.fund < BALANCE.memorialRestore, disabledText: 'Need the money for a mover, or a friend with a truck.' },
+      { label: `Restore it: move the bench back (${money(BALANCE.memorialRestore)})`, goto: 'memorial_restore', require: (g) => !g.has('richardBench'), disabled: (g) => !g.isAlly('ronnie') && g.state.fund < BALANCE.memorialRestore, disabledText: 'Need the money for a mover, or a friend with a truck.' },
+      { label: 'Restore it: Richard builds a new cedar bench (free)', goto: 'memorial_restore_richard', require: (g) => g.has('richardBench') },
       { label: `Memorial garden (${money(BALANCE.memorialGarden)})`, goto: 'memorial_garden', disabled: (g) => g.state.fund < BALANCE.memorialGarden, disabledText: 'Not enough in the fund for a garden yet.' },
       { label: 'Dedication ceremony (25 energy)', goto: 'memorial_ceremony', disabled: (g) => g.state.energy < 25, disabledText: 'You need 25 energy to do this right.' },
       { label: 'Give me a day to arrange it.', goto: 'memorial_later' },
@@ -741,6 +857,11 @@ export const DIALOGUE: Dialogues = {
   memorial_restore: [
     { if: (g) => g.isAlly('ronnie'), then: 'memorial_restore_truck' },
     { effects: [{ fund: -BALANCE.memorialRestore }] },
+    { goto: 'memorial_restore_done' },
+  ],
+  memorial_restore_richard: [
+    N('Two Saturdays later, {shop} delivers: a cedar bench, hand-carved names, sanded until it glows. Ronnie carries it. Richard supervises. Everybody supervises.'),
+    L('richard', 'Cedar. It\'ll outlast the warehouse. Which, no offense, is not a high bar.', 'happy'),
     { goto: 'memorial_restore_done' },
   ],
   memorial_restore_truck: [
@@ -814,7 +935,7 @@ export const DIALOGUE: Dialogues = {
   // ---------------------------------------------------------------- Q3: Neighbors
   neighborsIntro: [
     N('Three separate neighbors have complained about the church this week. That\'s a personal record.'),
-    N('Gary (west, by his mailbox) is upset about parking. Linda (east of the lot) is upset about noise. Tonya at the apartments has "concerns."'),
+    N('Gary (west, by his mailbox) is upset about parking. Linda (east of the lot) is upset about noise. Monique at the apartments has "concerns."'),
     ME('Love thy neighbor. It never says "the easy ones."', 'tired'),
     { effects: [{ quest: ['neighbor', 'active', 0] }] },
   ],
@@ -895,7 +1016,7 @@ export const DIALOGUE: Dialogues = {
     N('Saturday. Ronnie\'s truck, Gary\'s debris pile from the April storm, and six volunteers who "just happened to be around."'),
     N('By noon: debris gone. By two: hand-painted PARKING THIS WAY signs, wired with tiny lights by a retired electrician who hummed the whole time.'),
     L('gary', 'Nobody\'s hauled that pile in three months. Nobody ASKED to.', 'happy'),
-    { effects: [{ set: 'serviceDone' }, { ally: 'ronnie' }, { ally: 'gary' }, { ally: 'linda' }, { ally: 'tonya' }, { goodwill: 14 }, { morale: 6 }, { quest: ['neighbor', 'done'], outcome: ['neighbor', 'Cleared Gary\'s storm debris. Gary runs the parking team now. Linda and Tonya are friends.'] }] },
+    { effects: [{ set: 'serviceDone' }, { ally: 'ronnie' }, { ally: 'gary' }, { ally: 'linda' }, { ally: 'tonya' }, { goodwill: 14 }, { morale: 6 }, { quest: ['neighbor', 'done'], outcome: ['neighbor', 'Cleared Gary\'s storm debris. Gary runs the parking team now. Linda and Monique are friends.'] }] },
     ME('Love thy actual neighbor. Turns out it involves a truck.', 'happy'),
   ],
   service_linda: [
@@ -903,7 +1024,7 @@ export const DIALOGUE: Dialogues = {
     N('Saturday. Linda\'s back fence has leaned since 2021. Ronnie has posts. Doug has a level. You have a shovel and a lot of enthusiasm.'),
     N('By four the fence is straight, painted, and Linda has fed everyone twice. She keeps saying "you didn\'t have to." Everyone keeps saying "we know."'),
     L('linda', 'The figurines are coming back out to the front window. As a sign of trust.', 'happy'),
-    { effects: [{ set: 'serviceDone' }, { ally: 'ronnie' }, { ally: 'linda' }, { ally: 'gary' }, { ally: 'tonya' }, { goodwill: 14 }, { morale: 6 }, { quest: ['neighbor', 'done'], outcome: ['neighbor', 'Rebuilt Linda\'s fence. The figurines returned to the window. Gary and Tonya are friends.'] }] },
+    { effects: [{ set: 'serviceDone' }, { ally: 'ronnie' }, { ally: 'linda' }, { ally: 'gary' }, { ally: 'tonya' }, { goodwill: 14 }, { morale: 6 }, { quest: ['neighbor', 'done'], outcome: ['neighbor', 'Rebuilt Linda\'s fence. The figurines returned to the window. Gary and Monique are friends.'] }] },
     ME('Love thy actual neighbor. Turns out it involves fence posts.', 'happy'),
   ],
   service_tonya: [
@@ -964,6 +1085,8 @@ export const DIALOGUE: Dialogues = {
     L('whitlock', 'Three car washes and a boat. That\'s the whole bio. Ask me about the boat.'),
     L('whitlock', 'Heard you pastored up north before this. {formerChurch}, right? Old building. Real steeple. And you traded it for a warehouse with a bucket.', 'smug'),
     ME('I replanted a church in {hometown}, then came here to plant one from scratch. Apparently I only know how to do this the hard way.', 'tired'),
+    L('whitlock', 'And before that, {hometownSC}. Explains the shirt.'),
+    ME('Go {team}. That\'s not a joke. That\'s a confession of faith.', 'smug'),
   ],
   whitlock_pitch: [
     N('Mr. Whitlock owns three car washes and a boat named "Liquid Assets."'),
@@ -1219,6 +1342,8 @@ export const DIALOGUE: Dialogues = {
     L('tim', 'Your own sign says it: "{mission}" Notice "build a warehouse" isn\'t on there. {sendingChurch} didn\'t send you out for square footage.'),
     L('tim', 'Although, for a guy who spent years in a submarine, a windowless metal building probably feels like home.', 'smug'),
     ME('It has a hum. I find the hum comforting.'),
+    L('tim', 'Kelso, Washington. Charlestown. Now Clarksville. You planted, you replanted, you planted again. You\'re a serial planter. There are support groups.'),
+    ME('{firstPlant} was the first. I was younger. I had hair. Allegedly.', 'smug'),
     L('tim', 'Go love people. Listen more than you talk. When you\'re stuck in a hard conversation, LISTEN first, then do what the listening tells you.'),
     L('tim', 'And if you get really stuck, text me. In encounters, "Ask Wise Sage" is literally me. I answer fast. I don\'t sleep. Bald guys don\'t need to.', 'smug'),
     { effects: [{ set: 'metTim' }] },
@@ -1236,7 +1361,7 @@ export const DIALOGUE: Dialogues = {
     L('tim', 'When the email thread comes for you, do NOT reply inside it. Set a boundary, take it offline. A subcommittee is how threads reproduce.'),
   ],
   tim_neighbor: [
-    L('tim', 'Neighbors. Gary wants a job, not an apology. Linda wants an invitation, not a lecture. Tonya just wants to know if you\'re staying.'),
+    L('tim', 'Neighbors. Gary wants a job, not an apology. Linda wants an invitation, not a lecture. Monique just wants to know if you\'re staying.'),
     L('tim', 'Then DO something with your hands. Ronnie has a truck. A truck is a sacrament, basically.'),
   ],
   tim_campaign: [
@@ -1379,8 +1504,8 @@ export const DIALOGUE: Dialogues = {
     N('Under "Big Kids" someone has written "aka the Mason problem." Under that, in different handwriting: "I can read this."'),
   ],
   ev_blackhawks: [
-    N('Sunday, 10:52 AM. Two Blackhawks from {post} come over low, right at the closing point.'),
-    N('Nobody hears the closing point. Everybody loves it. Specialist Reyes salutes the ceiling. Dennis takes it as a sign.'),
+    N('Sunday, 10:52 AM. Two Apaches from {post} come over low, right at the closing point.'),
+    N('Nobody hears the closing point. Everybody loves it. Specialist Reyes salutes the ceiling. Dennis takes it as a sign. Hannah looks at the ceiling and mouths "ELI."'),
     ME('I\'ll say the closing point again next week. It was good. Trust me.', 'happy'),
     { effects: [{ morale: 3 }] },
   ],
@@ -1498,7 +1623,12 @@ export function ENDING_SCRIPT(kind: 'buy' | 'build', g: Game): EndingLine[] {
   if (g.isAlly('whitlock')) lines.push({ who: 'whitlock', mood: 'happy', text: 'The Dorothy Whitlock Music Room. Kids on Wednesdays. Mama would\'ve hated the noise. She\'d have loved it.' });
   if (g.flag('donorChoice') === 'restroom') lines.push({ who: 'whitlock', mood: 'smug', text: 'The Whitlock Family Restroom. Brass plaque. Little crown. Worth every penny. Ask anyone. Don\'t.' });
   if (g.isAlly('dale')) lines.push({ who: 'dale', mood: 'happy', text: 'AC works. I checked. I check every Tuesday. Bass are biting, by the way.' });
-  lines.push({ who: 'tasha', mood: 'happy', text: 'Four kids rooms with DOORS. Babees, Tots, Little Kids, Big Kids. Bread is head volunteer now.' });
+  lines.push({ who: 'richard', mood: 'happy', text: 'Every bench, the coffee bar, and the welcome desk: cedar. I have never been happier. Jamie says I need a new hobby. Jamie is wrong.' });
+  lines.push({ who: 'eli', mood: 'happy', text: 'Classrooms. Actual classrooms. The C-Groups finished a study. ONE study. It counts. Go Vols.' });
+  lines.push({ who: 'hannah', mood: 'happy', text: 'The new binder is three inches thick. The tabs have tabs. Ask me where the light switches are. I know.' });
+  lines.push({ who: 'julie', mood: 'happy', text: 'New logo, new sign, new font. The old banner was burned in a ceremony. I designed the flyer.' });
+  lines.push({ who: 'sam', mood: 'happy', text: 'Four kids rooms with DOORS. Babees, Tots, Little Kids, Big Kids. Bread is head volunteer now.' });
+  lines.push({ who: 'tanya', mood: 'happy', text: 'The Big Kids looked it up. The stain is not in the Bible. They are disappointed.' });
   if (g.has('reyesTalked')) lines.push({ who: 'reyes', mood: 'happy', text: 'Orders got extended. I told the Army it was the coffee. It was not the coffee.' });
   lines.push({ who: 'brayden', mood: 'happy', text: 'Slides are typo-free. Mostly. "Jesus Lovs You" is on a t-shirt now. It\'s a vibe.' });
   lines.push({ who: 'erik', mood: 'neutral', text: 'The building is the receipt. Everyone in this room is the reason. ' + PERSONAL.churchName + '. ' + PERSONAL.townName + '.' });
@@ -1523,9 +1653,11 @@ export function ENDING_CREDITS(kind: 'buy' | 'build', g: Game): { text: string; 
   }
   out.push({ text: '' });
   out.push({ text: 'PEOPLE WHO SHOWED UP', color: '#ffd27f' });
-  const allyNames: Record<string, string> = { ronnie: 'Big Ronnie & the Truck', dale: 'Dale (HVAC & Bass)', pruitt: 'Mrs. Pruitt (2nd row)', harold: 'Harold (reformed replier)', gary: 'Gary (cones)', linda: 'Linda (brownies)', tonya: 'Tonya (Cumberland Pines)', whitlock: 'Mr. Whitlock (& Dorothy)' };
+  const allyNames: Record<string, string> = { richard: `${PERSONAL.staff.carePastor} (cedar)`, eli: `${PERSONAL.staff.discipleshipPastor} (Go Vols, forgiven)`, hannah: `${PERSONAL.staff.operations} (the binder)`, ronnie: 'Big Ronnie & the Truck', dale: 'Dale (HVAC & Bass)', pruitt: 'Mrs. Pruitt (2nd row)', harold: 'Harold (reformed replier)', gary: 'Gary (cones)', linda: 'Linda (brownies)', tonya: 'Monique (Cumberland Pines)', whitlock: 'Mr. Whitlock (& Dorothy)' };
   for (const a of s.allies) out.push({ text: allyNames[a] ?? a, small: true });
-  out.push({ text: 'Kyle, Brayden (Bread), Tasha, Doug, Marcus, Janet', small: true });
+  out.push({ text: `${PERSONAL.staff.carePastor}, ${PERSONAL.staff.discipleshipPastor}, ${PERSONAL.staff.operations}`, small: true });
+  out.push({ text: `${PERSONAL.staff.assistant}, ${PERSONAL.staff.littleKids}, ${PERSONAL.staff.bigKids}`, small: true });
+  out.push({ text: 'Kyle, Brayden (Bread), Doug, Marcus, Janet', small: true });
   out.push({ text: `and ${PERSONAL.sageName}`, small: true });
   out.push({ text: '' });
   out.push({ text: 'BY THE NUMBERS', color: '#ffd27f' });

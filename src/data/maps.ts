@@ -259,7 +259,12 @@ function buildChurch(): MapDef {
   // NPCs
   m.npc({ id: 'kyle', x: 13, y: 16, dir: 'up', dialogue: 'kyle' });
   m.npc({ id: 'brayden', x: 11, y: 16, dir: 'up', dialogue: 'brayden' });
-  m.npc({ id: 'tasha', x: 20, y: 6, dir: 'left', dialogue: 'tasha', wander: true });
+  m.npc({ id: 'sam', x: 20, y: 6, dir: 'left', dialogue: 'sam', wander: true });
+  m.npc({ id: 'tanya', x: 3, y: 8, dir: 'right', dialogue: 'tanya' });
+  m.npc({ id: 'richard', x: 6, y: 16, dir: 'left', dialogue: 'richard' });
+  m.npc({ id: 'eli', x: 16, y: 13, dir: 'down', dialogue: 'eli' });
+  m.npc({ id: 'hannah', x: 18, y: 17, dir: 'right', dialogue: 'hannah' });
+  m.npc({ id: 'julie', x: 24, y: 16, dir: 'left', dialogue: 'julie' });
   m.npc({ id: 'doug', x: 10, y: 4, dir: 'down', dialogue: 'doug' });
   m.npc({ id: 'marcus', x: 14, y: 4, dir: 'down', dialogue: 'marcus' });
   m.npc({ id: 'janet', x: 12, y: 6, dir: 'up', dialogue: 'janet' });

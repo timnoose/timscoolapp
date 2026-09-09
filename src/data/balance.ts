@@ -21,7 +21,7 @@ export const BALANCE = {
   eventChance: 0.55,
 
   // Encounter costs
-  moveEnergyCost: { listen: 4, vision: 10, coffee: 0, volunteer: 8, boundary: 12, sage: 6, meeting: 14 },
+  moveEnergyCost: { listen: 4, vision: 10, coffee: 0, volunteer: 8, boundary: 12, sage: 6, meeting: 12 },
   encounterLossMorale: 4,
 
   // Endings

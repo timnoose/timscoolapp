@@ -162,7 +162,7 @@ export const ENCOUNTERS: Record<string, EncounterDef> = {
     effectiveness: { listen: 'good', vision: 'backfire', coffee: 'weak', volunteer: 'normal', boundary: 'normal', meeting: 'good' },
     afterListen: { meeting: 'super', volunteer: 'good', boundary: 'good' },
     moves: [
-      { id: 'notary', name: 'Requires Notarization', text: 'This page requires a notary. The notary is at lunch. The notary is Bev.', energy: -10 },
+      { id: 'notary', name: 'Requires Notarization', text: 'This page requires a notary. The notary is at lunch. The notary is Bev.', energy: -7 },
       { id: 'formb', name: 'Attach Form B', text: '"Please attach Form B." Form B is a rumor.', delay: 1 },
       { id: '12b', name: 'Section 12(b)', text: 'Section 12(b) references Section 12(a). Section 12(a) references 12(b).', resolution: -8 },
       { id: 'p31', name: 'Page 31 vs Page 4', text: 'Page 31 contradicts page 4. Both are mandatory.', resist: 1 },
@@ -212,7 +212,7 @@ export const ENCOUNTERS: Record<string, EncounterDef> = {
       { id: 'bench', name: 'Bench Press Reference', text: '"Marcus, what do you bench?" Marcus does not bench. Marcus has a Fitbit.', energy: -6 },
       { id: 'never', name: "We've Never Done It That Way", text: '"We\'ve always met in the warehouse." It has been four years.', resist: 1 },
       { id: 'stain', name: 'Bring Up the Stain', text: 'Everyone looks up at the stain. It looks back.', resolution: -6 },
-      { id: 'anon', name: 'Anonymous Email', text: 'Someone sent an anonymous email. It is signed "Doug."', energy: -8 },
+      { id: 'anon', name: 'Anonymous Email', text: 'Someone sent an anonymous email. It is signed "Doug."', energy: -6 },
     ],
     target: 100,
     flavor: { volunteer: '"Doug. I need a head of the build team. Someone who can move a wall and a committee." Doug stands. Doug is already standing. He stands more.' },
@@ -281,7 +281,7 @@ export const ENCOUNTERS: Record<string, EncounterDef> = {
     effectiveness: { listen: 'good', vision: 'good', coffee: 'weak', volunteer: 'good', boundary: 'good', meeting: 'weak' },
     afterListen: { volunteer: 'super', vision: 'super', boundary: 'good' },
     moves: [
-      { id: 'chair', name: 'Steel Chair (Foam)', text: 'A steel chair! It is foam. It still stings emotionally.', energy: -10 },
+      { id: 'chair', name: 'Steel Chair (Foam)', text: 'A steel chair! It is foam. It still stings emotionally.', energy: -7 },
       { id: 'chant', name: 'Crowd Chants His Name', text: '"DEA-CON! DEA-CON!" The kids started it. The elders joined.', resolution: -6 },
       { id: 'rope', name: 'Rope-A-Dope', text: 'He leans on the ropes. The ropes are ratchet straps. Resistance rises.', resist: 1 },
       { id: 'rules', name: 'Cite the Rulebook', text: '"That\'s illegal!" There is no rulebook. There is a bulletin.', energy: -4 },

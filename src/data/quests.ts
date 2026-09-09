@@ -47,12 +47,12 @@ export const QUESTS: Record<string, QuestDef> = {
   },
   neighbor: {
     id: 'neighbor', order: 3, title: 'Love Thy Actual Neighbor',
-    description: 'Gary (parking), Linda (noise) and Tonya (apartments) have opinions. Win them over.',
+    description: 'Gary (parking), Linda (noise) and Monique (apartments) have opinions. Win them over.',
     objective: (g) => {
       const parts: string[] = [];
       if (!g.has('garyResolved')) parts.push('Gary (west, by his mailbox)');
       if (!g.has('lindaResolved')) parts.push('Linda (east of the lot)');
-      if (!g.has('tonyaResolved')) parts.push('Tonya (apartments)');
+      if (!g.has('tonyaResolved')) parts.push('Monique (apartments)');
       if (parts.length) return 'Talk with the neighbors: ' + parts.join(', ') + '.';
       if (!g.has('serviceDone')) return 'Do an act of service: talk to Big Ronnie by his truck.';
       return 'Done.';
@@ -107,8 +107,11 @@ export const ALLY_NOTES: Record<string, string> = {
   harold: 'Deacon Emeritus. Has been talked off Reply All. Knows everyone on the zoning board.',
   gary: 'Retired electrician next door. Parking peace achieved. Knows how to wire an LED wall.',
   linda: 'Former zoning board member. Noise treaty signed. Vouches for you at City Hall.',
-  tonya: 'Apartment manager. Sends residents your way. Found the trailer.',
+  tonya: 'Apartment manager (Monique). Sends residents your way. Found the trailer.',
   whitlock: 'Donor with opinions about restrooms. Writes checks.',
   tim: 'Church planting sage. Bald, wise, texts back instantly.',
   kyle: 'Sound guy. The board only works if he is looking at it.',
+  hannah: 'Director of Operations. Has a binder for the binders. Form 12-C is already filled out.',
+  richard: 'Care Pastor and woodworker. Born on post. Builds benches, counters, and peace.',
+  eli: 'Discipleship Pastor and Apache pilot. Go Vols. Forgive him.',
 };

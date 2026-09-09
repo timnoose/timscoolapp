@@ -97,13 +97,23 @@ try {
     console.log('  (rested: day ' + (await g.state()).day + ', energy ' + (await g.state()).energy + ')');
   }
   async function talk(map, x, y, dir, opts = {}) {
-    if (!opts.noRest && (await g.state()).energy < 55) await restViaCouch();
+    if (!opts.noRest && (await g.state()).energy < 70) await restViaCouch();
     await g.teleport(map, x, y);
     await page.waitForTimeout(150);
     await runUntilFree(); // any auto dialogue on entering
     await page.evaluate(() => window.__heman.session.game.state.flags.lastEncounter = '');
     await faceAndTalk(dir);
     return runUntilFree(opts);
+  }
+  const endingPhase = () => page.evaluate(() => { const e = window.__heman.game.scene.getScene('Ending'); return e && window.__heman.game.scene.isActive('Ending') ? e.debugPhase : 'none'; });
+  async function finishEnding() {
+    for (let i = 0; i < 200 && (await endingPhase()) === 'walk'; i++) await page.waitForTimeout(100);
+    for (let i = 0; i < 200 && (await endingPhase()) === 'talk'; i++) { await g.press('Space', 30); await page.waitForTimeout(50); }
+    await page.keyboard.down('Space');
+    for (let i = 0; i < 300 && (await endingPhase()) === 'credits'; i++) await page.waitForTimeout(100);
+    await page.keyboard.up('Space');
+    await page.waitForTimeout(300);
+    await g.press('Space'); await page.waitForTimeout(1500);
   }
   const flags = async () => (await g.state()).flags;
   const quest = async (id) => (await g.state()).quests[id] ?? { status: 'inactive', stage: 0 };
@@ -263,13 +273,8 @@ try {
   check(await g.scene('Ending'), 'Ending scene active after buying');
   await page.waitForTimeout(5500);
   await g.shot('20-ending-buy');
-  for (let i = 0; i < 40; i++) { await g.press('Space', 30); await page.waitForTimeout(60); }
-  await page.waitForTimeout(500);
+  await finishEnding();
   await g.shot('21-credits');
-  // fast-forward credits by holding A
-  await page.keyboard.down('Space'); await page.waitForTimeout(6000); await page.keyboard.up('Space');
-  await page.waitForTimeout(500);
-  await g.press('Space'); await page.waitForTimeout(1500);
   check(await g.scene('Title'), 'back to title after buy ending');
 
   // ---------- Ending: BUILD (restore snapshot) ----------
@@ -283,10 +288,7 @@ try {
   check(await g.scene('Ending'), 'Ending scene active after building');
   await page.waitForTimeout(5500);
   await g.shot('22-ending-build');
-  for (let i = 0; i < 40; i++) { await g.press('Space', 30); await page.waitForTimeout(60); }
-  await page.keyboard.down('Space'); await page.waitForTimeout(6000); await page.keyboard.up('Space');
-  await page.waitForTimeout(500);
-  await g.press('Space'); await page.waitForTimeout(1500);
+  await finishEnding();
   check(await g.scene('Title'), 'back to title after build ending');
 
   // ---------- Lose an encounter and retry ----------

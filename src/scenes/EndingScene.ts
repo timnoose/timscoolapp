@@ -32,6 +32,8 @@ export class EndingScene extends Phaser.Scene {
 
   constructor() { super('Ending'); }
 
+  get debugPhase(): string { return this.phase; }
+
   init(data: { kind: 'buy' | 'build' }): void { this.kind = data.kind ?? 'buy'; this.idx = 0; this.phase = 'walk'; }
 
   create(): void {
@@ -53,7 +55,7 @@ export class EndingScene extends Phaser.Scene {
     // congregation lined up in the aisle facing down
     const g = session.game;
     const cx = Math.floor(def.w / 2);
-    const cast = ['tim', 'kyle', 'tasha', 'ronnie', 'doug', 'marcus', 'janet', 'brayden', 'member1', 'member2'];
+    const cast = ['tim', 'richard', 'eli', 'hannah', 'julie', 'kyle', 'sam', 'tanya', 'ronnie', 'doug', 'marcus', 'janet', 'brayden', 'member1', 'member2'];
     if (g.isAlly('pruitt')) cast.push('pruitt');
     if (g.isAlly('gary')) cast.push('gary');
     if (g.isAlly('linda')) cast.push('linda');

@@ -253,7 +253,7 @@ export class EncounterScene extends Phaser.Scene {
     g.state.energy = Math.max(0, Math.min(BALANCE.maxEnergy, this.st.energy));
     if (this.st.moraleDelta) g.change('morale', this.st.moraleDelta);
     if (kind === 'lose') g.change('morale', -BALANCE.encounterLossMorale);
-    if (kind === 'lose' && g.state.energy < 15) g.state.energy = 15; // never strand the player with nothing
+    if (kind !== 'win' && g.state.energy < 15) g.state.energy = 15; // never strand the player with nothing
     g.set('lastEncounter', kind);
     this.cameras.main.fadeOut(250, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {

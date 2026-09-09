@@ -63,10 +63,28 @@ export const PERSONAL = {
     lastName: 'Maloy',
     formerLife: 'US Navy submariner and MMA fighter',
     podcast: true,
+    hometown: 'Columbia, South Carolina',
     hometownRegion: 'Boston',
     formerChurch: 'First Church in Charlestown',
-    formerJob: 'public school teacher',
+    firstPlant: 'Solid Rock Fellowship in Kelso, Washington',
+    formerJob: 'high school teacher and coach',
+    book: 'Wounded by Sheep',
+    fandom: 'Star Wars',
+    hobby: 'softball',
+    seminary: 'an MDiv he is "pursuing"',
     family: 'Sarah, Casey and Kayla', // shown on the office desk photo; leave '' to skip
+  },
+
+  // Real staff (from the church website). Names only; the game keeps them on the friendly side.
+  staff: {
+    carePastor: 'Richard Christian',
+    carePastorShop: 'Snoopy Drive Woodworks',
+    discipleshipPastor: 'Eli Kay',
+    operations: 'Hannah Kay',
+    assistant: 'Julie Kuczek',
+    littleKids: 'Sam Embers',
+    bigKids: 'Tanya White',
+    rivalTeam: 'Vols',
   },
 
   // Erik's "fake cursing": symbol strings only, never a real word

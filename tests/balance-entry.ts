@@ -52,3 +52,39 @@ export function simulate(): string[] {
   out.push(`economy: min Sunday offering ${minSunday} > max random expense ${maxRandomCost}: ${minSunday > maxRandomCost}`);
   return out;
 }
+
+/** Win rate of the listen-first strategy when entering with a low tank. */
+export function lowEnergy(): string[] {
+  const out: string[] = [];
+  for (const start of [100, 70, 55, 40]) {
+    const rates: string[] = [];
+    for (const def of Object.values(ENCOUNTERS)) {
+      let wins = 0; const trials = 300;
+      for (let t = 0; t < trials; t++) {
+        const r = rng(t * 977 + start);
+        const st = createEncounter(def, start, false, 'Tim');
+        let turns = 0;
+        while (!st.over && turns < 30) {
+          turns++;
+          let move: MoveId = 'listen';
+          if (st.listened) {
+            const rank: Record<string, number> = { super: 4, good: 3, normal: 2, weak: 1, backfire: 0 };
+            let best: MoveId | null = null, bs = -1;
+            for (const m of ['vision', 'coffee', 'volunteer', 'boundary', 'meeting'] as MoveId[]) {
+              if (!canUse(st, m).ok) continue;
+              const sc = rank[effectivenessOf(st, m)] + (m === 'coffee' && st.energy < 30 ? 1.5 : 0);
+              if (sc > bs) { bs = sc; best = m; }
+            }
+            move = best ?? (canUse(st, 'coffee').ok ? 'coffee' : 'listen');
+          }
+          if (!canUse(st, move).ok) break;
+          playerMove(st, move, r);
+        }
+        if (st.over === 'win') wins++;
+      }
+      rates.push(`${def.id}:${Math.round(100 * wins / trials)}`);
+    }
+    out.push(`start ${start}: ${rates.join(' ')}`);
+  }
+  return out;
+}

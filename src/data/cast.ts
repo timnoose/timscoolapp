@@ -43,10 +43,35 @@ export const CAST: Record<string, CastMember> = {
     sprite: { skin: SKIN.light, hair: '#e0c060', shirt: '#4a4a8a', pants: '#333', hairStyle: 'short' },
     portrait: { skin: SKIN.light, hair: '#e0c060', shirt: '#4a4a8a', hairStyle: 'short' },
   },
-  tasha: {
-    id: 'tasha', name: 'Tasha (Nursery)',
-    sprite: { skin: SKIN.brown, hair: '#1a1210', shirt: '#f0c030', pants: '#3a3a5a', hairStyle: 'long' },
-    portrait: { skin: SKIN.brown, hair: '#1a1210', shirt: '#f0c030', hairStyle: 'curly', earrings: true },
+  sam: {
+    id: 'sam', name: 'Sam Embers (Little Kids)',
+    sprite: { skin: SKIN.light, hair: '#6a4a2a', shirt: '#f0c030', pants: '#3a3a5a', hairStyle: 'short' },
+    portrait: { skin: SKIN.light, hair: '#6a4a2a', shirt: '#f0c030', hairStyle: 'short' },
+  },
+  tanya: {
+    id: 'tanya', name: 'Tanya White (Big Kids)',
+    sprite: { skin: SKIN.brown, hair: '#1a1210', shirt: '#9a4ac0', pants: '#3a3a5a', hairStyle: 'long' },
+    portrait: { skin: SKIN.brown, hair: '#1a1210', shirt: '#9a4ac0', hairStyle: 'curly', earrings: true },
+  },
+  richard: {
+    id: 'richard', name: 'Pastor Richard (Care)',
+    sprite: { skin: SKIN.light, hair: '#a8a8b0', shirt: '#8a4a3a', pants: '#3a3a44', hairStyle: 'short' },
+    portrait: { skin: SKIN.light, hair: '#a8a8b0', shirt: '#8a4a3a', hairStyle: 'short' },
+  },
+  eli: {
+    id: 'eli', name: 'Pastor Eli (Discipleship)',
+    sprite: { skin: SKIN.tan, hair: '#2a1a10', shirt: '#ff8200', pants: '#4a5a3a', hairStyle: 'short' },
+    portrait: { skin: SKIN.tan, hair: '#2a1a10', shirt: '#ff8200', hairStyle: 'short' },
+  },
+  hannah: {
+    id: 'hannah', name: 'Hannah (Operations)',
+    sprite: { skin: SKIN.light, hair: '#5a3a20', shirt: '#2a9a9a', pants: '#3a3a5a', hairStyle: 'long' },
+    portrait: { skin: SKIN.light, hair: '#5a3a20', shirt: '#2a9a9a', hairStyle: 'long', earrings: true },
+  },
+  julie: {
+    id: 'julie', name: 'Julie (Ministry Asst.)',
+    sprite: { skin: SKIN.pale, hair: '#1a1018', shirt: '#202028', pants: '#2a2a2a', hairStyle: 'bun', tattoo: true },
+    portrait: { skin: SKIN.pale, hair: '#1a1018', shirt: '#202028', hairStyle: 'bun', lipstick: true, earrings: true },
   },
   dennis: {
     id: 'dennis', name: 'Dennis',
@@ -84,7 +109,7 @@ export const CAST: Record<string, CastMember> = {
     portrait: { skin: SKIN.pale, hair: '#b04a2a', shirt: '#2aa0a0', hairStyle: 'long', lipstick: true, earrings: true },
   },
   tonya: {
-    id: 'tonya', name: 'Tonya (Apartments)',
+    id: 'tonya', name: 'Monique (Apartments)',
     sprite: { skin: SKIN.deep, hair: '#1a1210', shirt: '#7a3a9a', pants: '#2a2a3a', hairStyle: 'long' },
     portrait: { skin: SKIN.deep, hair: '#1a1210', shirt: '#7a3a9a', hairStyle: 'curly', lipstick: true },
   },
