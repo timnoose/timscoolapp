@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node tests/run.mjs"
+    "test": "node tests/run.mjs",
+    "build:single": "node scripts/build-single.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

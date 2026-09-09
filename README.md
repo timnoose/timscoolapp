@@ -12,6 +12,7 @@ No backend, no accounts, no APIs. A static build that runs in any modern browser
 - **Hosted:** open the link you were sent (or deploy your own, see below).
 - **Locally:** `npm install` then `npm run dev` and open the printed URL (http://localhost:5173).
 - **Static build:** `npm run build` produces `dist/` – upload that folder anywhere (GitHub Pages, Netlify, Vercel, an S3 bucket, a church website subfolder).
+- **Single file:** `npm run build:single` produces `dist/he-erik-man-quest.html`, one self-contained page (Phaser and the font load from CDNs) for hosts that only take a single HTML file.
 
 ### Controls
 

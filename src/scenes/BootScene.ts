@@ -21,7 +21,7 @@ export class BootScene extends Phaser.Scene {
     const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
     if (fonts && fonts.load) {
       Promise.race([
-        fonts.load('8px PressStart').then(() => fonts.ready),
+        Promise.all([fonts.load('8px PressStart'), fonts.load('8px "Press Start 2P"')]).then(() => fonts.ready),
         new Promise((r) => setTimeout(r, 2500)),
       ]).then(go, go);
     } else go();

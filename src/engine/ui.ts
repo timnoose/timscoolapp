@@ -3,7 +3,7 @@
  */
 import Phaser from 'phaser';
 
-export const FONT = 'PressStart';
+export const FONT = "'PressStart', 'Press Start 2P', monospace";
 export const COLORS = {
   boxBg: 0x1a2038,
   boxBorder: 0xf4f4f0,

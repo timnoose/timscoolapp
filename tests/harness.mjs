@@ -15,7 +15,7 @@ export async function startServer(port = 4173) {
   throw new Error('server start timeout');
 }
 
-export async function openGame({ port = 4173, mobile = false, headless = true } = {}) {
+export async function openGame({ port = 4173, mobile = false, headless = true, url } = {}) {
   mkdirSync('tests/out', { recursive: true });
   const browser = await chromium.launch({ headless, executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox', '--disable-gpu'] });
   const context = await browser.newContext(mobile
@@ -25,7 +25,7 @@ export async function openGame({ port = 4173, mobile = false, headless = true } 
   const errors = [];
   page.on('console', (m) => { if ((m.type() === 'error' || m.type() === 'warning') && !m.text().includes('GL Driver')) errors.push(`${m.type()}: ${m.text()}`); });
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-  await page.goto(`http://localhost:${port}/`, { waitUntil: 'load' });
+  await page.goto(url ?? `http://localhost:${port}/`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__heman && window.__heman.game && window.__heman.game.scene.isActive('Title'), null, { timeout: 15000 });
   await page.waitForTimeout(400);
   const api = {
