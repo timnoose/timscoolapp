@@ -48,10 +48,12 @@ function layout(): void {
   app.style.justifyContent = portraitTouch ? 'flex-start' : 'center';
   app.style.paddingTop = portraitTouch ? '8px' : '0';
   // Phaser centers the canvas inside its parent; in portrait-with-controls keep it at the top instead
-  if (game.scale) {
+  if (game.scale && game.isBooted) {
     game.scale.autoCenter = portraitTouch ? Phaser.Scale.CENTER_HORIZONTALLY : Phaser.Scale.CENTER_BOTH;
     game.scale.refresh();
   }
 }
 window.addEventListener('resize', layout);
+// the single-file build runs before the DOM is ready, so the game boots later; lay out again then
+game.events.once(Phaser.Core.Events.READY, layout);
 layout();
